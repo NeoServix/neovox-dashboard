@@ -8,6 +8,7 @@ export default function Home() {
   const [orgId, setOrgId] = useState<string | null>(null);
   
   const [agencyName, setAgencyName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
   const [agents, setAgents] = useState([{ full_name: "", phone_number: "" }]);
   
   const [cifFile, setCifFile] = useState<File | null>(null);
@@ -78,15 +79,18 @@ export default function Home() {
   };
 
   const handleFinalize = async () => {
-    if (!agencyName || agents.some(a => !a.full_name || !a.phone_number)) {
-      return alert("Faltan datos en el registro del equipo.");
+    if (!agencyName || !contactEmail || agents.some(a => !a.full_name || !a.phone_number)) {
+      return alert("Faltan datos en el registro del equipo o el correo de alertas.");
     }
 
     setIsUploading(true);
     try {
       await supabase
         .from('organizations')
-        .update({ name: agencyName })
+        .update({ 
+          name: agencyName,
+          contact_email: contactEmail 
+        })
         .eq('id', orgId);
 
       const agentsWithOrg = agents.map(a => ({ ...a, org_id: orgId }));
@@ -192,6 +196,17 @@ export default function Home() {
                   value={agencyName}
                   onChange={(e) => setAgencyName(e.target.value)}
                   placeholder="Ej: Inmobiliaria Madrid Norte"
+                  className="w-full p-4 rounded-xl border border-white/20 bg-black/50 text-white focus:border-white outline-none transition-all text-sm mb-4"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-gray-400 mb-2">Correo para alertas</label>
+                <input 
+                  type="email" 
+                  value={contactEmail}
+                  onChange={(e) => setContactEmail(e.target.value)}
+                  placeholder="gerencia@inmobiliaria.com"
                   className="w-full p-4 rounded-xl border border-white/20 bg-black/50 text-white focus:border-white outline-none transition-all text-sm"
                 />
               </div>
