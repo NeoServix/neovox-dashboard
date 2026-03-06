@@ -2,9 +2,11 @@
 
 import { useState, useRef, ChangeEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase"; 
 
 export default function Home() {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [orgId, setOrgId] = useState<string | null>(null);
   
@@ -89,7 +91,6 @@ export default function Home() {
       return alert("Debes aceptar los Términos de Servicio y el DPA para poder activar el nodo.");
     }
 
-    // Filtro de limpieza para los números de teléfono
     const processedAgents = agents.map(a => {
       const soloNumeros = a.phone_number.replace(/\D/g, '');
       const nueveDigitos = soloNumeros.slice(-9);
@@ -105,7 +106,6 @@ export default function Home() {
       return alert("Uno de los números de teléfono introducidos no es válido. Revisa que tengan 9 dígitos.");
     }
 
-    // Eliminamos la variable temporal raw_length antes de subir a base de datos
     const finalAgents = processedAgents.map(({ raw_length, ...rest }) => rest);
 
     setIsUploading(true);
@@ -115,21 +115,26 @@ export default function Home() {
         .update({ 
           name: agencyName,
           contact_email: contactEmail,
-          sector: "Inmobiliaria" // Etiqueta estática inyectada por defecto
+          sector: "Inmobiliaria"
         })
         .eq('id', orgId);
 
       const { error } = await supabase.from('agents').insert(finalAgents);
-
       if (error) throw error;
 
-      alert("Configuración terminada. El nodo NeoVox ya está activo.");
-      window.location.reload(); 
+      // Disparamos el correo de confirmación
+      await fetch('/api/onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: contactEmail, agencyName: agencyName })
+      });
+
+      alert("Configuración terminada. Te hemos enviado un email de confirmación.");
+      router.push('/'); 
     } catch (e: any) {
       alert("Fallo al conectar el equipo: " + e.message);
-    } finally {
       setIsUploading(false);
-    }
+    } 
   };
 
   const FileUploadBlock = ({ 
