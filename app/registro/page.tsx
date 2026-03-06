@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, ChangeEvent } from "react";
-import { supabase } from "../lib/supabase"; // Asegura que la ruta suba dos niveles si está en app/registro
+import Link from "next/link";
+import { supabase } from "../lib/supabase"; 
 
 export default function Home() {
   const [step, setStep] = useState(1);
@@ -9,7 +10,6 @@ export default function Home() {
   
   const [agencyName, setAgencyName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
-  const [sector, setSector] = useState("");
   const [legalAccepted, setLegalAccepted] = useState(false);
   const [agents, setAgents] = useState([{ full_name: "", phone_number: "" }]);
   
@@ -81,13 +81,32 @@ export default function Home() {
   };
 
   const handleFinalize = async () => {
-    if (!agencyName || !contactEmail || !sector || agents.some(a => !a.full_name || !a.phone_number)) {
-      return alert("Faltan datos en el registro del equipo, sector o el correo de alertas.");
+    if (!agencyName || !contactEmail || agents.some(a => !a.full_name || !a.phone_number)) {
+      return alert("Faltan datos en el registro del equipo o el correo de alertas.");
     }
 
     if (!legalAccepted) {
       return alert("Debes aceptar los Términos de Servicio y el DPA para poder activar el nodo.");
     }
+
+    // Filtro de limpieza para los números de teléfono
+    const processedAgents = agents.map(a => {
+      const soloNumeros = a.phone_number.replace(/\D/g, '');
+      const nueveDigitos = soloNumeros.slice(-9);
+      return {
+        full_name: a.full_name,
+        phone_number: "+34" + nueveDigitos,
+        raw_length: nueveDigitos.length,
+        org_id: orgId
+      };
+    });
+
+    if (processedAgents.some(a => a.raw_length < 9)) {
+      return alert("Uno de los números de teléfono introducidos no es válido. Revisa que tengan 9 dígitos.");
+    }
+
+    // Eliminamos la variable temporal raw_length antes de subir a base de datos
+    const finalAgents = processedAgents.map(({ raw_length, ...rest }) => rest);
 
     setIsUploading(true);
     try {
@@ -96,12 +115,11 @@ export default function Home() {
         .update({ 
           name: agencyName,
           contact_email: contactEmail,
-          sector: sector
+          sector: "Inmobiliaria" // Etiqueta estática inyectada por defecto
         })
         .eq('id', orgId);
 
-      const agentsWithOrg = agents.map(a => ({ ...a, org_id: orgId }));
-      const { error } = await supabase.from('agents').insert(agentsWithOrg);
+      const { error } = await supabase.from('agents').insert(finalAgents);
 
       if (error) throw error;
 
@@ -208,22 +226,6 @@ export default function Home() {
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase font-bold text-gray-400 mb-2">Sector de Actividad</label>
-                <select 
-                  value={sector}
-                  onChange={(e) => setSector(e.target.value)}
-                  className="w-full p-4 rounded-xl border border-white/20 bg-black/50 text-white focus:border-white outline-none transition-all text-sm appearance-none"
-                >
-                  <option value="" disabled>Selecciona tu área de negocio</option>
-                  <option value="Inmobiliaria Residencial">Inmobiliaria Residencial</option>
-                  <option value="Inmobiliaria Comercial">Inmobiliaria Comercial</option>
-                  <option value="Promotora / Obra Nueva">Promotora / Obra Nueva</option>
-                  <option value="Gestión de Patrimonios">Gestión de Patrimonios</option>
-                  <option value="Otro">Otro</option>
-                </select>
-              </div>
-
-              <div>
                 <label className="block text-[10px] uppercase font-bold text-gray-400 mb-2">Correo para alertas</label>
                 <input 
                   type="email" 
@@ -235,7 +237,7 @@ export default function Home() {
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase font-bold text-gray-400 mb-4">Listado de Comerciales (+34)</label>
+                <label className="block text-[10px] uppercase font-bold text-gray-400 mb-4">Listado de Comerciales (Móvil)</label>
                 <div className="space-y-3 max-h-48 overflow-y-auto pr-2 mb-4">
                   {agents.map((agent, index) => (
                     <div key={index} className="flex gap-2">
@@ -245,7 +247,7 @@ export default function Home() {
                         onChange={(e) => updateAgent(index, 'full_name', e.target.value)}
                       />
                       <input 
-                        placeholder="+34..." 
+                        placeholder="Ej: 612 345 678" 
                         className="w-1/2 p-3 rounded-lg border border-white/20 bg-black/50 text-white text-sm outline-none focus:border-white"
                         onChange={(e) => updateAgent(index, 'phone_number', e.target.value)}
                       />
@@ -269,7 +271,7 @@ export default function Home() {
                   className="mt-1 w-4 h-4 rounded border-white/20 bg-black/50 checked:bg-white checked:border-white focus:ring-0 cursor-pointer"
                 />
                 <label htmlFor="legal" className="text-xs text-gray-400 cursor-pointer leading-tight">
-                  He leído y acepto los Términos de Servicio y el Acuerdo de Procesamiento de Datos (DPA). Asumo mi responsabilidad como Responsable del Tratamiento de los datos aportados.
+                  He leído y acepto los <Link href="/legal" target="_blank" className="text-[#00A8E8] hover:underline hover:text-white transition-colors">Términos de Servicio y el Acuerdo de Procesamiento de Datos (DPA)</Link>. Asumo mi responsabilidad como Responsable del Tratamiento de los datos aportados.
                 </label>
               </div>
 
