@@ -1,275 +1,67 @@
-"use client";
+import Link from "next/link";
+import Image from "next/image";
 
-import { useState, useRef, ChangeEvent } from "react";
-import { supabase } from "./lib/supabase";
-
-export default function Home() {
-  const [step, setStep] = useState(1);
-  const [orgId, setOrgId] = useState<string | null>(null);
-  
-  const [agencyName, setAgencyName] = useState("");
-  const [contactEmail, setContactEmail] = useState("");
-  const [agents, setAgents] = useState([{ full_name: "", phone_number: "" }]);
-  
-  const [cifFile, setCifFile] = useState<File | null>(null);
-  const [dniFile, setDniFile] = useState<File | null>(null);
-  const [receiptFile, setReceiptFile] = useState<File | null>(null);
-  
-  const [isUploading, setIsUploading] = useState(false);
-  
-  const cifInputRef = useRef<HTMLInputElement | null>(null);
-  const dniInputRef = useRef<HTMLInputElement | null>(null);
-  const receiptInputRef = useRef<HTMLInputElement | null>(null);
-
-  const handleFileChange = (setter: React.Dispatch<React.SetStateAction<File | null>>) => (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setter(e.target.files[0]);
-    }
-  };
-
-  const handleUpload = async () => {
-    if (!cifFile || !dniFile || !receiptFile) {
-      return alert("Falta cargar uno o más documentos requeridos para la validación.");
-    }
-    
-    setIsUploading(true);
-    try {
-      const { data: org, error: orgError } = await supabase
-        .from('organizations')
-        .insert([{ name: "Pendiente de configuración" }])
-        .select()
-        .single();
-
-      if (orgError) throw orgError;
-
-      const filesToUpload = [
-        { file: cifFile, prefix: 'CIF' },
-        { file: dniFile, prefix: 'DNI' },
-        { file: receiptFile, prefix: 'RECIBO' }
-      ];
-
-      for (const item of filesToUpload) {
-        const fileExt = item.file.name.split('.').pop();
-        const fileName = `${org.id}/${item.prefix}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('kyc-documents')
-          .upload(fileName, item.file);
-
-        if (uploadError) throw uploadError;
-      }
-
-      setOrgId(org.id);
-      setStep(2);
-    } catch (error: any) {
-      alert("Error en la conexión con el búnker: " + error.message);
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const addAgentRow = () => {
-    setAgents([...agents, { full_name: "", phone_number: "" }]);
-  };
-
-  const updateAgent = (index: number, field: string, value: string) => {
-    const newAgents = [...agents];
-    (newAgents[index] as any)[field] = value;
-    setAgents(newAgents);
-  };
-
-  const handleFinalize = async () => {
-    if (!agencyName || !contactEmail || agents.some(a => !a.full_name || !a.phone_number)) {
-      return alert("Faltan datos en el registro del equipo o el correo de alertas.");
-    }
-
-    setIsUploading(true);
-    try {
-      await supabase
-        .from('organizations')
-        .update({ 
-          name: agencyName,
-          contact_email: contactEmail 
-        })
-        .eq('id', orgId);
-
-      const agentsWithOrg = agents.map(a => ({ ...a, org_id: orgId }));
-      const { error } = await supabase.from('agents').insert(agentsWithOrg);
-
-      if (error) throw error;
-
-      alert("Configuración terminada. El nodo NeoVox ya está activo.");
-      window.location.reload(); 
-    } catch (e: any) {
-      alert("Fallo al conectar el equipo: " + e.message);
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const FileUploadBlock = ({ 
-    title, 
-    file, 
-    inputRef, 
-    onChange 
-  }: { 
-    title: string; 
-    file: File | null; 
-    inputRef: React.RefObject<HTMLInputElement | null>; 
-    onChange: (e: ChangeEvent<HTMLInputElement>) => void; 
-  }) => (
-    <div 
-      onClick={() => !isUploading && inputRef.current?.click()}
-      className={`border border-dashed border-white/20 bg-white/5 rounded-xl p-4 text-center transition-all cursor-pointer mb-4 ${isUploading ? 'opacity-50' : 'hover:border-white/40'} flex justify-between items-center`}
-    >
-      <input 
-        type="file" 
-        ref={inputRef as React.RefObject<HTMLInputElement>} 
-        className="hidden" 
-        accept=".pdf,image/*" 
-        onChange={onChange} 
-      />
-      <span className="text-xs font-bold text-white">{title}</span>
-      <span className="text-xs text-gray-400 truncate max-w-37.5">
-        {file ? file.name : "Subir archivo"}
-      </span>
-    </div>
-  );
-
+export default function Landing() {
   return (
-    <main className="flex flex-col lg:flex-row min-h-screen bg-[#0A0A0A] font-sans text-gray-200">
-      
-      {/* PANEL IZQUIERDO: Interactivo */}
-      <div className="w-full lg:w-1/2 p-6 lg:p-16 flex flex-col justify-center items-center">
+    <div className="min-h-screen bg-[#0A0A0A] text-gray-200 font-sans selection:bg-[#00A8E8] selection:text-white">
+      {/* Header */}
+      <header className="border-b border-white/10 bg-black/50 backdrop-blur-md fixed top-0 w-full z-50">
+        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Image src="/logo.png" alt="NeoVox Logo" width={28} height={28} className="object-contain" />
+            <span className="text-white font-bold tracking-widest uppercase text-sm">NeoVox</span>
+          </div>
+          <Link 
+            href="/registro"
+            className="text-xs font-bold bg-white text-black px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors uppercase tracking-wider"
+          >
+            Conectar Nodo
+          </Link>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <main className="pt-40 pb-16 px-6 max-w-6xl mx-auto flex flex-col items-center text-center">
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#001C41] rounded-full blur-[120px] -z-10 opacity-50" />
         
-        {step === 1 ? (
-          <div className="max-w-md w-full">
-            <div className="mb-8">
-              <span className="text-[10px] font-bold text-gray-500 tracking-[0.2em] uppercase">Paso 1 de 2</span>
-              <h1 className="text-3xl lg:text-4xl font-bold text-white mt-2 mb-4 tracking-tight">
-                Validación Legal
-              </h1>
-              <p className="text-gray-400 text-sm leading-relaxed">
-                Cargue los tres documentos exigidos por la normativa de telecomunicaciones para activar sus terminales.
-              </p>
-            </div>
-            
-            <div className="mb-6">
-              <FileUploadBlock 
-                title="1. CIF de la Sociedad" 
-                file={cifFile} 
-                inputRef={cifInputRef} 
-                onChange={handleFileChange(setCifFile)} 
-              />
-              <FileUploadBlock 
-                title="2. DNI Administrador" 
-                file={dniFile} 
-                inputRef={dniInputRef} 
-                onChange={handleFileChange(setDniFile)} 
-              />
-              <FileUploadBlock 
-                title="3. Recibo de Suministro" 
-                file={receiptFile} 
-                inputRef={receiptInputRef} 
-                onChange={handleFileChange(setReceiptFile)} 
-              />
-            </div>
+        <span className="text-[#00A8E8] text-[10px] font-mono font-bold tracking-[0.2em] uppercase mb-6 px-3 py-1 border border-[#00A8E8]/30 rounded-full bg-[#00A8E8]/10">
+          Infraestructura de Voz y Datos
+        </span>
+        
+        <h1 className="text-5xl lg:text-7xl font-bold text-white tracking-tight leading-tight max-w-4xl mb-6">
+          Controla el embudo comercial.<br />Elimina la latencia de respuesta.
+        </h1>
+        
+        <p className="text-gray-400 text-lg max-w-2xl mb-12">
+          NeoVox es un motor de enrutamiento para agencias inmobiliarias. Intercepta los leads entrantes; lee los datos con inteligencia artificial y conecta la llamada con el comercial disponible en menos de 20 segundos.
+        </p>
 
-            <button 
-              onClick={handleUpload}
-              disabled={isUploading}
-              className="w-full bg-white text-black font-bold py-5 px-8 rounded-xl shadow-lg hover:bg-gray-200 transition-all uppercase text-[10px] tracking-widest disabled:opacity-50"
-            >
-              {isUploading ? "Cifrando documentos..." : "Validar y Continuar"}
-            </button>
+        <Link 
+          href="/registro"
+          className="bg-[#00A8E8] text-white font-bold py-4 px-8 rounded-xl hover:bg-[#0090C8] transition-all uppercase text-xs tracking-widest shadow-[0_0_20px_rgba(0,168,232,0.3)]"
+        >
+          Montar mi infraestructura
+        </Link>
+
+        {/* Especificaciones de ingeniería */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mt-32 text-left">
+          <div className="bg-white/5 border border-white/10 p-8 rounded-2xl backdrop-blur-sm">
+            <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center mb-6 text-white font-mono text-xs">01</div>
+            <h3 className="text-white font-bold mb-3 text-lg">Respuesta en Milisegundos</h3>
+            <p className="text-gray-400 text-sm leading-relaxed">El servidor procesa el correo de entrada y ejecuta la orden de llamada antes de que el cliente cierre la pestaña del portal inmobiliario.</p>
           </div>
-        ) : (
-          <div className="max-w-md w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <span className="text-[10px] font-bold text-gray-500 tracking-[0.2em] uppercase">Paso 2 de 2</span>
-            <h1 className="text-3xl font-bold text-white mt-2 mb-8 tracking-tight">Configura tu Búnker</h1>
-            
-            <div className="space-y-6">
-              <div>
-                <label className="block text-[10px] uppercase font-bold text-gray-400 mb-2">Nombre de la Sociedad</label>
-                <input 
-                  type="text" 
-                  value={agencyName}
-                  onChange={(e) => setAgencyName(e.target.value)}
-                  placeholder="Ej: Inmobiliaria Madrid Norte"
-                  className="w-full p-4 rounded-xl border border-white/20 bg-black/50 text-white focus:border-white outline-none transition-all text-sm mb-4"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] uppercase font-bold text-gray-400 mb-2">Correo para alertas</label>
-                <input 
-                  type="email" 
-                  value={contactEmail}
-                  onChange={(e) => setContactEmail(e.target.value)}
-                  placeholder="gerencia@inmobiliaria.com"
-                  className="w-full p-4 rounded-xl border border-white/20 bg-black/50 text-white focus:border-white outline-none transition-all text-sm"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] uppercase font-bold text-gray-400 mb-4">Listado de Comerciales (+34)</label>
-                <div className="space-y-3 max-h-48 overflow-y-auto pr-2 mb-4">
-                  {agents.map((agent, index) => (
-                    <div key={index} className="flex gap-2">
-                      <input 
-                        placeholder="Nombre completo" 
-                        className="w-1/2 p-3 rounded-lg border border-white/20 bg-black/50 text-white text-sm outline-none focus:border-white"
-                        onChange={(e) => updateAgent(index, 'full_name', e.target.value)}
-                      />
-                      <input 
-                        placeholder="+34..." 
-                        className="w-1/2 p-3 rounded-lg border border-white/20 bg-black/50 text-white text-sm outline-none focus:border-white"
-                        onChange={(e) => updateAgent(index, 'phone_number', e.target.value)}
-                      />
-                    </div>
-                  ))}
-                </div>
-                <button 
-                  onClick={addAgentRow}
-                  className="text-[10px] font-bold text-gray-500 hover:text-white uppercase tracking-wider transition-colors"
-                >
-                  + Añadir otro terminal
-                </button>
-              </div>
-
-              <button 
-                onClick={handleFinalize}
-                disabled={isUploading}
-                className="w-full bg-white text-black font-bold py-5 px-8 rounded-xl shadow-xl hover:bg-gray-200 transition-all uppercase text-[10px] tracking-widest disabled:opacity-50"
-              >
-                {isUploading ? "Conectando terminales..." : "Activar Protocolo NeoVox"}
-              </button>
-            </div>
+          <div className="bg-white/5 border border-white/10 p-8 rounded-2xl backdrop-blur-sm">
+            <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center mb-6 text-white font-mono text-xs">02</div>
+            <h3 className="text-white font-bold mb-3 text-lg">Susurro de Datos</h3>
+            <p className="text-gray-400 text-sm leading-relaxed">El agente comercial descuelga el teléfono y escucha un resumen con el nombre del cliente y la vivienda de interés antes de establecer la conexión.</p>
           </div>
-        )}
-      </div>
-
-      {/* PANEL DERECHO: Institucional */}
-      <div className="w-full lg:w-1/2 bg-black p-6 lg:p-16 flex flex-col justify-center items-center text-white relative overflow-hidden border-l border-white/10">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-125 h-125 bg-blue-500/10 rounded-full blur-[100px]" />
-        <div className="relative z-10 border border-white/10 bg-white/5 backdrop-blur-md p-8 lg:p-12 rounded-4xl max-w-md shadow-2xl">
-          <h2 className="text-xl lg:text-2xl font-bold mb-4 tracking-tight">Control del ROI</h2>
-          <p className="text-gray-400 text-xs lg:text-sm leading-relaxed mb-6">
-            El sistema de enrutamiento procesa cada lead de entrada en milisegundos; bloquea las interrupciones y asigna el tráfico al terminal adecuado.
-          </p>
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 p-3 bg-black/40 rounded-xl border border-white/5">
-              <span className="text-[10px] font-mono bg-white/10 px-2 py-0.5 rounded text-white">LATENCY</span>
-              <p className="text-[10px] text-gray-400">Menos de 20 segundos de respuesta garantizada.</p>
-            </div>
-            <div className="flex items-center gap-3 p-3 bg-black/40 rounded-xl border border-white/5">
-              <span className="text-[10px] font-mono bg-white/10 px-2 py-0.5 rounded text-white">PRIVACY</span>
-              <p className="text-[10px] text-gray-400">Cifrado continuo en cada interacción de voz y datos.</p>
-            </div>
+          <div className="bg-white/5 border border-white/10 p-8 rounded-2xl backdrop-blur-sm">
+            <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center mb-6 text-white font-mono text-xs">03</div>
+            <h3 className="text-white font-bold mb-3 text-lg">Búnker Nocturno</h3>
+            <p className="text-gray-400 text-sm leading-relaxed">Los contactos que entran fuera del horario de oficina quedan retenidos en la base de datos. El sistema los agrupa y los envía a primera hora de la mañana.</p>
           </div>
         </div>
-      </div>
-
-    </main>
+      </main>
+    </div>
   );
 }
