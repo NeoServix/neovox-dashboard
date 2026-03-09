@@ -26,18 +26,31 @@ export default function PuertaAcceso() {
     setError("");
     setCargando(true);
 
-    // Aquí forzamos las minúsculas para evitar fallos de teclado móvil
     const valorLimpio = credencial.trim().toLowerCase();
+    const sinEspacios = valorLimpio.replace(/\s+/g, '');
     
     const esEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valorLimpio);
-    const esTelefono = /^\+?[0-9\s]{9,15}$/.test(valorLimpio);
+    
+    // Evaluamos la longitud y el formato del teléfono en segundo plano
+    let esTelefono = false;
+    let telefonoBusqueda = sinEspacios;
+
+    if (!esEmail) {
+      if (/^[0-9]{9}$/.test(sinEspacios)) {
+        esTelefono = true;
+        telefonoBusqueda = "+34" + sinEspacios;
+      } else if (/^\+[0-9]{9,15}$/.test(sinEspacios)) {
+        esTelefono = true;
+        telefonoBusqueda = sinEspacios;
+      }
+    }
 
     try {
       if (esEmail) {
         const { data, error: errDb } = await supabase
           .from('organizations')
           .select('id')
-          .eq('inbound_email', valorLimpio)
+          .eq('contact_email', valorLimpio)
           .single();
 
         if (errDb || !data) throw new Error("No hay ninguna agencia vinculada a este correo.");
@@ -49,16 +62,16 @@ export default function PuertaAcceso() {
         const { data, error: errDb } = await supabase
           .from('agents')
           .select('id, org_id')
-          .eq('phone_number', valorLimpio)
+          .eq('phone_number', telefonoBusqueda)
           .single();
 
-        if (errDb || !data) throw new Error("No encontramos este número. Recuerda escribir el prefijo (+34).");
+        if (errDb || !data) throw new Error("No encontramos este número de teléfono en el sistema.");
 
         localStorage.setItem('neovox_agent_id', data.id);
         router.push('/agente');
 
       } else {
-        throw new Error("Formato no válido. Escribe un correo o un teléfono con prefijo.");
+        throw new Error("Escribe un correo de gerencia válido o un móvil de 9 dígitos.");
       }
     } catch (err: any) {
       setError(err.message);
@@ -79,14 +92,14 @@ export default function PuertaAcceso() {
           <div>
             <input
               type="text"
-              placeholder="Correo o teléfono"
+              placeholder="Email (Gerencia) o Móvil (Agentes)"
               value={credencial}
               onChange={(e) => setCredencial(e.target.value)}
               className="w-full bg-black/50 border border-white/20 rounded-xl p-4 text-white text-sm outline-none focus:border-blue-500 transition-colors text-center"
               autoComplete="off"
             />
-            <p className="text-[10px] text-gray-500 text-center mt-3 font-medium">
-              Obligatorio incluir prefijo en móviles (ej. +34600123456)
+            <p className="text-[10px] text-gray-500 text-center mt-3 font-medium px-4">
+              El sistema procesa automáticamente los números móviles de 9 dígitos.
             </p>
           </div>
 

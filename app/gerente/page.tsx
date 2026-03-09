@@ -4,12 +4,36 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 
+const DAYS_ES = {
+  monday: "Lunes",
+  tuesday: "Martes",
+  wednesday: "Miércoles",
+  thursday: "Jueves",
+  friday: "Viernes",
+  saturday: "Sábado",
+  sunday: "Domingo"
+};
+
+type DaySchedule = { isOpen: boolean; open: string; close: string };
+type ScheduleConfig = Record<string, DaySchedule>;
+
+const defaultSchedule: ScheduleConfig = {
+  monday: { isOpen: true, open: "09:00", close: "18:00" },
+  tuesday: { isOpen: true, open: "09:00", close: "18:00" },
+  wednesday: { isOpen: true, open: "09:00", close: "18:00" },
+  thursday: { isOpen: true, open: "09:00", close: "18:00" },
+  friday: { isOpen: true, open: "09:00", close: "15:00" },
+  saturday: { isOpen: false, open: "00:00", close: "00:00" },
+  sunday: { isOpen: false, open: "00:00", close: "00:00" }
+};
+
 export default function ConsolaGerente() {
   const router = useRouter();
   const [org, setOrg] = useState<any>(null);
   const [agentes, setAgentes] = useState<any[]>([]);
   const [llamadas, setLlamadas] = useState<any[]>([]);
   const [cargando, setCargando] = useState(true);
+  const [guardandoHorario, setGuardandoHorario] = useState(false);
 
   useEffect(() => {
     const orgId = localStorage.getItem("neovox_org_id");
@@ -19,9 +43,10 @@ export default function ConsolaGerente() {
     }
 
     async function cargarBunker() {
+      // Extraemos la matriz de horarios además del nombre y plan
       const { data: orgData } = await supabase
         .from("organizations")
-        .select("name, plan_tier")
+        .select("id, name, plan_tier, schedule")
         .eq("id", orgId)
         .single();
 
@@ -29,6 +54,8 @@ export default function ConsolaGerente() {
         router.push("/login");
         return;
       }
+
+      if (!orgData.schedule) orgData.schedule = defaultSchedule;
       setOrg(orgData);
 
       const { data: agData } = await supabase
@@ -68,6 +95,31 @@ export default function ConsolaGerente() {
       .from("agents")
       .update({ is_receiving_calls: nuevoEstado })
       .eq("id", id);
+  }
+
+  const updateDaySchedule = (day: string, field: keyof DaySchedule, value: boolean | string) => {
+    setOrg({
+      ...org,
+      schedule: {
+        ...org.schedule,
+        [day]: { ...org.schedule[day], [field]: value }
+      }
+    });
+  };
+
+  async function guardarMatrizHorarios() {
+    setGuardandoHorario(true);
+    const { error } = await supabase
+      .from('organizations')
+      .update({ schedule: org.schedule })
+      .eq('id', org.id);
+    
+    setGuardandoHorario(false);
+    if (error) {
+      alert("Fallo al guardar: " + error.message);
+    } else {
+      alert("Matriz de enrutamiento actualizada.");
+    }
   }
 
   function cerrarSesion() {
@@ -129,28 +181,82 @@ export default function ConsolaGerente() {
             </div>
           </div>
 
-          <div className="order-1 lg:order-2">
-            <h2 className="text-xs lg:text-sm font-bold text-white uppercase tracking-wider mb-4">Mando Central de Líneas</h2>
-            <div className="bg-white/5 border border-white/10 rounded-xl p-4 lg:p-5">
-              <div className="space-y-3">
-                {agentes.map(agente => (
-                  <div key={agente.id} className="flex items-center justify-between p-3 bg-black/40 rounded-lg border border-white/5">
-                    <div>
-                      <p className="font-bold text-sm text-white">{agente.full_name}</p>
-                      <p className="text-[10px] font-mono text-gray-500">{agente.phone_number}</p>
+          <div className="order-1 lg:order-2 space-y-6">
+            
+            <div>
+              <h2 className="text-xs lg:text-sm font-bold text-white uppercase tracking-wider mb-4">Mando Central de Líneas</h2>
+              <div className="bg-white/5 border border-white/10 rounded-xl p-4 lg:p-5">
+                <div className="space-y-3">
+                  {agentes.map(agente => (
+                    <div key={agente.id} className="flex items-center justify-between p-3 bg-black/40 rounded-lg border border-white/5">
+                      <div>
+                        <p className="font-bold text-sm text-white">{agente.full_name}</p>
+                        <p className="text-[10px] font-mono text-gray-500">{agente.phone_number}</p>
+                      </div>
+                      <button 
+                        onClick={() => alternarEstadoAgente(agente.id, agente.is_receiving_calls)} 
+                        className={`w-12 h-6 rounded-full relative transition-colors ${agente.is_receiving_calls ? 'bg-green-500/80' : 'bg-white/20'}`}
+                      >
+                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${agente.is_receiving_calls ? 'left-7 shadow-md' : 'left-1'}`} />
+                      </button>
                     </div>
-                    <button 
-                      onClick={() => alternarEstadoAgente(agente.id, agente.is_receiving_calls)} 
-                      className={`w-12 h-6 rounded-full relative transition-colors ${agente.is_receiving_calls ? 'bg-green-500/80' : 'bg-white/20'}`}
-                    >
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${agente.is_receiving_calls ? 'left-7 shadow-md' : 'left-1'}`} />
-                    </button>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
 
+            {/* MATRIZ DE HORARIOS PARA EL GERENTE */}
+            <div>
+              <h2 className="text-xs lg:text-sm font-bold text-white uppercase tracking-wider mb-4">Horario</h2>
+              <div className="bg-white/5 border border-white/10 rounded-xl p-4 lg:p-5 space-y-4">
+                <div className="space-y-2">
+                  {Object.keys(DAYS_ES).map((day) => {
+                    const dayData = org.schedule?.[day] || defaultSchedule[day];
+                    return (
+                      <div key={day} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-black/40 rounded-lg border border-white/5 gap-3">
+                        <div className="flex items-center gap-3 w-full sm:w-1/3">
+                          <input 
+                            type="checkbox" 
+                            checked={dayData.isOpen}
+                            onChange={(e) => updateDaySchedule(day, "isOpen", e.target.checked)}
+                            className="w-4 h-4 rounded border-white/20 bg-black/50 checked:bg-blue-500 focus:ring-0 cursor-pointer"
+                          />
+                          <span className={`text-xs font-bold ${dayData.isOpen ? 'text-white' : 'text-gray-500'}`}>
+                            {DAYS_ES[day as keyof typeof DAYS_ES]}
+                          </span>
+                        </div>
+
+                        <div className={`flex gap-3 transition-opacity ${dayData.isOpen ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}>
+                          <input 
+                            type="time" 
+                            value={dayData.open}
+                            onChange={(e) => updateDaySchedule(day, "open", e.target.value)}
+                            className="bg-black/50 border border-white/20 text-white text-xs p-1.5 rounded outline-none focus:border-blue-500"
+                          />
+                          <span className="text-gray-500 text-xs mt-1.5">-</span>
+                          <input 
+                            type="time" 
+                            value={dayData.close}
+                            onChange={(e) => updateDaySchedule(day, "close", e.target.value)}
+                            className="bg-black/50 border border-white/20 text-white text-xs p-1.5 rounded outline-none focus:border-blue-500"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <button 
+                  onClick={guardarMatrizHorarios}
+                  disabled={guardandoHorario}
+                  className="w-full bg-white text-black font-bold py-3 rounded-lg text-xs uppercase tracking-widest hover:bg-gray-200 transition-colors disabled:opacity-50 mt-2"
+                >
+                  {guardandoHorario ? 'Guardando...' : 'Fijar Horarios'}
+                </button>
+              </div>
+            </div>
+
+          </div>
         </div>
       </div>
     </main>
