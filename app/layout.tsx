@@ -24,6 +24,15 @@ export const metadata: Metadata = {
   title: "NeoVox | Terminal",
   description: "Filtro técnico y enrutamiento IA",
   manifest: "/manifest.json",
+  applicationName: "NeoVox",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "NeoVox",
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export default function RootLayout({
