@@ -54,40 +54,46 @@ export default function TerminalAgente() {
     router.push("/login");
   }
 
-  if (cargando) return <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center text-white font-mono text-xs">Conectando terminal...</div>;
+  if (cargando) return <div className="min-h-screen bg-black flex items-center justify-center text-white font-mono text-xs">Conectando terminal...</div>;
 
   return (
-    <main className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-between p-6 font-sans select-none">
-      <div className="w-full flex justify-between items-center mt-4">
+    <main className="min-h-screen bg-black flex flex-col items-center justify-between p-6 font-sans select-none relative selection:bg-[#00A8E8] selection:text-white overflow-hidden">
+      
+      {/* Resplandor de fondo general */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#00A8E8]/10 rounded-full blur-[120px] -z-10 pointer-events-none" />
+
+      {/* Cabecera Cristal */}
+      <div className="w-full max-w-md mx-auto flex justify-between items-center bg-[#121212]/80 backdrop-blur-xl border border-white/5 p-5 rounded-2xl shadow-lg relative z-10 mt-4">
         <div>
-          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Operador en línea</p>
-          <h1 className="text-lg font-bold text-white mt-1">{agente.full_name}</h1>
+          <p className="text-[10px] text-[#00A8E8] font-bold uppercase tracking-widest mb-1">Operador en línea</p>
+          <h1 className="text-base font-bold text-white">{agente.full_name}</h1>
         </div>
-        <button onClick={cerrarSesion} className="text-[10px] text-red-500 font-bold uppercase tracking-wider bg-red-500/10 px-4 py-2 rounded border border-red-500/20 active:bg-red-500/30 transition-colors">
+        <button onClick={cerrarSesion} className="text-[10px] text-red-400 font-bold uppercase tracking-wider bg-red-500/10 px-4 py-2.5 rounded-xl border border-red-500/20 active:bg-red-500/30 hover:bg-red-500/20 transition-colors shadow-sm">
           Desconectar
         </button>
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center w-full">
+      {/* Botón Central */}
+      <div className="flex-1 flex flex-col items-center justify-center w-full relative z-10">
         <button
           onClick={alternarEstado}
-          className={`relative w-64 h-64 rounded-full flex flex-col items-center justify-center transition-all duration-200 active:scale-95 ${
+          className={`relative w-72 h-72 rounded-full flex flex-col items-center justify-center transition-all duration-300 active:scale-95 backdrop-blur-md ${
             agente.is_receiving_calls 
-              ? "bg-green-500/10 border-4 border-green-500 text-green-400 shadow-[0_0_60px_rgba(34,197,94,0.15)]" 
-              : "bg-red-500/5 border-4 border-red-900 text-red-600"
+              ? "bg-[#00A8E8]/10 border-4 border-[#00A8E8] text-white shadow-[0_0_80px_rgba(0,168,232,0.4)]" 
+              : "bg-[#121212]/80 border-4 border-white/5 text-gray-500 shadow-inner"
           }`}
         >
-          <span className="text-4xl font-black tracking-tight mb-2">
+          <span className={`text-5xl font-black tracking-tight mb-3 ${agente.is_receiving_calls ? "text-[#00A8E8] drop-shadow-[0_0_10px_rgba(0,168,232,0.8)]" : "text-gray-600"}`}>
             {agente.is_receiving_calls ? "ACTIVO" : "PAUSADO"}
           </span>
-          <span className="text-xs font-mono opacity-60">
+          <span className={`text-xs font-mono uppercase tracking-widest ${agente.is_receiving_calls ? "text-[#00A8E8]/80" : "text-gray-600"}`}>
             {agente.is_receiving_calls ? "Recibiendo tráfico" : "Línea cortada"}
           </span>
         </button>
       </div>
 
-      <div className="w-full text-center mb-8">
-        <p className="text-[10px] text-gray-700 font-mono tracking-widest">NEOVOX SECURE ENROUTING</p>
+      <div className="w-full text-center mb-8 relative z-10">
+        <p className="text-[10px] text-[#00A8E8]/40 font-mono tracking-widest uppercase">NeoVox Secure Routing</p>
       </div>
     </main>
   );

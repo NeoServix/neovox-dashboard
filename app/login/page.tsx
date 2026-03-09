@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
 import { supabase } from "../lib/supabase";
 
 export default function PuertaAcceso() {
@@ -81,21 +83,35 @@ export default function PuertaAcceso() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0A0A0A] flex flex-col justify-center items-center p-6 font-sans">
-      <div className="w-full max-w-sm bg-white/5 border border-white/10 p-8 rounded-2xl backdrop-blur-md">
-        <div className="text-center mb-8">
+    <main className="min-h-screen bg-black flex flex-col justify-center items-center p-6 font-sans relative selection:bg-[#00A8E8] selection:text-white">
+      
+      {/* Botón flotante para volver */}
+      <Link href="/" className="absolute top-6 left-6 z-50 flex items-center gap-3 bg-black/50 backdrop-blur-md p-3 rounded-xl border border-white/10 hover:bg-white/5 transition-colors">
+        <Image src="/logo.png" alt="NeoVox" width={20} height={20} />
+        <span className="text-[10px] font-bold tracking-widest uppercase text-white">Volver</span>
+      </Link>
+
+      {/* Resplandor central */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#00A8E8]/10 rounded-full blur-[100px] -z-10" />
+
+      <div className="w-full max-w-sm bg-[#121212]/80 backdrop-blur-xl border border-white/5 p-8 rounded-3xl shadow-[0_0_50px_rgba(0,168,232,0.05)] relative overflow-hidden">
+        
+        <div className="text-center mb-8 relative z-10">
+          <div className="w-12 h-12 bg-[#00A8E8]/10 border border-[#00A8E8]/20 rounded-xl flex items-center justify-center mx-auto mb-5 text-[#00A8E8]">
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" /></svg>
+          </div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Terminal NeoVox</h1>
           <p className="text-xs text-gray-400 mt-2">Acceso a la red de enrutamiento</p>
         </div>
 
-        <form onSubmit={procesarEntrada} className="space-y-6">
+        <form onSubmit={procesarEntrada} className="space-y-6 relative z-10">
           <div>
             <input
               type="text"
               placeholder="Email (Gerencia) o Móvil (Agentes)"
               value={credencial}
               onChange={(e) => setCredencial(e.target.value)}
-              className="w-full bg-black/50 border border-white/20 rounded-xl p-4 text-white text-sm outline-none focus:border-blue-500 transition-colors text-center"
+              className="w-full bg-black/50 border border-[#00A8E8]/20 rounded-xl p-4 text-white text-sm outline-none focus:border-[#00A8E8] transition-all text-center placeholder:text-gray-600"
               autoComplete="off"
             />
             <p className="text-[10px] text-gray-500 text-center mt-3 font-medium px-4">
@@ -104,17 +120,17 @@ export default function PuertaAcceso() {
           </div>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/50 p-3 rounded-lg text-center">
-              <p className="text-xs text-red-400 font-medium">{error}</p>
+            <div className="bg-red-500/10 border border-red-500/20 p-3 rounded-xl text-center backdrop-blur-sm">
+              <p className="text-[11px] text-red-400 font-bold tracking-wide uppercase">{error}</p>
             </div>
           )}
 
           <button
             type="submit"
             disabled={cargando}
-            className="w-full bg-white text-black font-bold py-4 rounded-xl text-sm hover:bg-gray-200 transition-colors disabled:opacity-50"
+            className="w-full bg-[#00A8E8] text-white font-bold py-4 rounded-xl text-xs uppercase tracking-widest shadow-[0_0_20px_rgba(0,168,232,0.3)] hover:bg-[#0090C8] transition-all disabled:opacity-50 active:scale-[0.98]"
           >
-            {cargando ? "Conectando..." : "Acceder"}
+            {cargando ? "Conectando..." : "Acceder al sistema"}
           </button>
         </form>
       </div>
