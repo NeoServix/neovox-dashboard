@@ -35,9 +35,18 @@ export default function Home() {
     if (!cifFile || !dniFile || !receiptFile) {
       return alert("Falta cargar uno o más documentos requeridos para la validación.");
     }
+
+    // Defensa 1: Límite de 5MB por archivo (5 * 1024 * 1024 bytes)
+    const MAX_FILE_SIZE = 5242880; 
+    if (cifFile.size > MAX_FILE_SIZE || dniFile.size > MAX_FILE_SIZE || receiptFile.size > MAX_FILE_SIZE) {
+      return alert("Uno de los archivos pesa más de 5MB. Por favor, comprime los documentos antes de subirlos.");
+    }
     
     setIsUploading(true);
+    let tempOrgId = null;
+
     try {
+      // Abrimos el registro temporal
       const { data: org, error: orgError } = await supabase
         .from('organizations')
         .insert([{ name: "Pendiente de configuración" }])
@@ -45,6 +54,7 @@ export default function Home() {
         .single();
 
       if (orgError) throw orgError;
+      tempOrgId = org.id;
 
       const filesToUpload = [
         { file: cifFile, prefix: 'CIF' },
@@ -60,13 +70,19 @@ export default function Home() {
           .from('kyc-documents')
           .upload(fileName, item.file);
 
-        if (uploadError) throw uploadError;
+        // Si falla un solo archivo, forzamos el error para ir al bloque catch
+        if (uploadError) throw new Error(`Fallo al subir el documento ${item.prefix}: ${uploadError.message}`);
       }
 
+      // Si todo sale bien, consolidamos el ID
       setOrgId(org.id);
       setStep(2);
     } catch (error: any) {
-      alert("Error en la conexión con el búnker: " + error.message);
+      // Defensa 2: Maniobra de marcha atrás si hubo error
+      if (tempOrgId) {
+        await supabase.from('organizations').delete().eq('id', tempOrgId);
+      }
+      alert("Error en la conexión con el búnker: " + error.message + ". Se ha cancelado el registro para proteger los datos.");
     } finally {
       setIsUploading(false);
     }
