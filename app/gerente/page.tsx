@@ -131,7 +131,7 @@ export default function ConsolaGerente() {
   return (
     <main className="min-h-screen bg-black p-4 lg:p-10 font-sans text-gray-200 relative selection:bg-[#00A8E8] selection:text-white">
       {/* Resplandor de fondo general */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-[#00A8E8]/5 rounded-full blur-[120px] -z-10 pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-200 h-150 bg-[#00A8E8]/5 rounded-full blur-[120px] -z-10 pointer-events-none" />
 
       <div className="max-w-6xl mx-auto space-y-6 lg:space-y-8 relative z-10">
         
@@ -154,7 +154,7 @@ export default function ConsolaGerente() {
             <h2 className="text-xs lg:text-sm font-bold text-white uppercase tracking-wider">Registro de Tráfico (Últimos 20)</h2>
             
             <div className="bg-[#121212]/80 backdrop-blur-xl border border-white/5 rounded-3xl overflow-hidden shadow-2xl relative">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#00A8E8]/50 to-transparent" />
+              <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-[#00A8E8]/50 to-transparent" />
               <div className="divide-y divide-white/5">
                 {llamadas.map(call => (
                   <div key={call.id} className="p-5 lg:p-6 hover:bg-white/5 transition-colors group">

@@ -298,7 +298,7 @@ export default function Home() {
 
       {/* PANEL DERECHO: Institucional */}
       <div className="w-full lg:w-1/2 bg-black/50 p-6 lg:p-16 flex flex-col justify-center items-center text-white relative overflow-hidden border-l border-white/5">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#00A8E8]/10 rounded-full blur-[120px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-150 h-150 bg-[#00A8E8]/10 rounded-full blur-[120px]" />
         
         <div className="relative z-10 bg-[#121212]/80 border border-[#00A8E8]/20 backdrop-blur-xl p-10 lg:p-12 rounded-3xl max-w-md shadow-[0_0_50px_rgba(0,168,232,0.05)]">
           <div className="w-12 h-12 bg-[#00A8E8]/10 rounded-xl flex items-center justify-center mb-6 text-[#00A8E8]">

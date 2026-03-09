@@ -60,7 +60,7 @@ export default function TerminalAgente() {
     <main className="min-h-screen bg-black flex flex-col items-center justify-between p-6 font-sans select-none relative selection:bg-[#00A8E8] selection:text-white overflow-hidden">
       
       {/* Resplandor de fondo general */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#00A8E8]/10 rounded-full blur-[120px] -z-10 pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-150 h-150 bg-[#00A8E8]/10 rounded-full blur-[120px] -z-10 pointer-events-none" />
 
       {/* Cabecera Cristal */}
       <div className="w-full max-w-md mx-auto flex justify-between items-center bg-[#121212]/80 backdrop-blur-xl border border-white/5 p-5 rounded-2xl shadow-lg relative z-10 mt-4">
