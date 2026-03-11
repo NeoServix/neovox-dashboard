@@ -134,16 +134,21 @@ export default function Home() {
       const { error } = await supabase.from('agents').insert(finalAgents);
       if (error) throw error;
 
-      await fetch('/api/onboarding', {
+      const respuestaCorreo = await fetch('/api/onboarding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: contactEmail, agencyName: agencyName })
       });
 
+      if (!respuestaCorreo.ok) {
+        const errorDatos = await respuestaCorreo.json();
+        throw new Error("El sistema ha fallado al intentar enviar el correo: " + (errorDatos.error || JSON.stringify(errorDatos)));
+      }
+
       alert("Configuración terminada. Te hemos enviado un email de confirmación.");
       router.push('/'); 
     } catch (e: any) {
-      alert("Fallo al conectar el equipo: " + e.message);
+      alert("Fallo en la conexión: " + e.message);
       setIsUploading(false);
     } 
   };
