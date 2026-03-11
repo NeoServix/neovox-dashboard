@@ -44,13 +44,14 @@ export default function ConsolaGerente() {
     }
 
     async function cargarBunker() {
+      // Ajuste técnico: seleccionamos 'business_hours' según el SQL de ayer
       const { data: orgData, error: errorOrg } = await supabase
         .from("organizations")
-        .select("id, name, plan_tier, schedule")
+        .select("id, name, plan_tier, business_hours")
         .eq("id", orgId)
         .single();
 
-      // Cortafuegos: si hay error o la agencia no existe, rompemos las credenciales
+      // Cortafuegos: si no hay datos o falla, limpiamos caché y echamos
       if (errorOrg || !orgData) {
         localStorage.removeItem("neovox_org_id");
         localStorage.removeItem("neovox_agent_id");
@@ -58,8 +59,11 @@ export default function ConsolaGerente() {
         return;
       }
 
-      if (!orgData.schedule) orgData.schedule = defaultSchedule;
-      setOrg(orgData);
+      // Mapeamos business_hours al estado interno 'schedule' para no romper el UI
+      setOrg({
+        ...orgData,
+        schedule: orgData.business_hours || defaultSchedule
+      });
 
       const { data: agData } = await supabase
         .from("agents")
@@ -112,9 +116,10 @@ export default function ConsolaGerente() {
 
   async function guardarMatrizHorarios() {
     setGuardandoHorario(true);
+    // Ajuste técnico: Guardamos en la columna 'business_hours'
     const { error } = await supabase
       .from('organizations')
-      .update({ schedule: org.schedule })
+      .update({ business_hours: org.schedule })
       .eq('id', org.id);
     
     setGuardandoHorario(false);
@@ -163,7 +168,6 @@ export default function ConsolaGerente() {
               <div className="divide-y divide-white/5">
                 {llamadas.map(call => (
                   <div key={call.id} className="p-5 lg:p-6 hover:bg-white/5 transition-colors group">
-                    
                     <div className="flex flex-col gap-2 mb-3">
                       <div className="flex items-center gap-3">
                         <span className="text-xs font-mono text-[#00A8E8] bg-[#00A8E8]/10 px-2 py-0.5 rounded border border-[#00A8E8]/20">{new Date(call.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
@@ -231,7 +235,7 @@ export default function ConsolaGerente() {
               <div className="bg-[#121212]/80 backdrop-blur-xl border border-white/5 rounded-3xl p-5 lg:p-6 shadow-2xl">
                 <div className="space-y-2 mb-6">
                   {Object.keys(DAYS_ES).map((day) => {
-                    const dayData = org.schedule?.[day] || defaultSchedule[day];
+                    const dayData = org?.schedule?.[day] || defaultSchedule[day];
                     return (
                       <div key={day} className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 bg-black/40 rounded-2xl border border-white/5 gap-3">
                         <div className="flex items-center gap-3 w-full sm:w-1/3">
