@@ -11,6 +11,7 @@ export default function TerminalAgente() {
 
   useEffect(() => {
     const agentId = localStorage.getItem("neovox_agent_id");
+    
     if (!agentId) {
       router.push("/login");
       return;
@@ -23,11 +24,16 @@ export default function TerminalAgente() {
         .eq("id", agentId)
         .single();
 
-      if (!error && data) {
-        setAgente(data);
-      } else {
+      // REVISIÓN TÉCNICA: Si el agente no existe o la conexión falla, 
+      // hay que purgar la memoria local para evitar el bucle infinito.
+      if (error || !data) {
+        localStorage.removeItem("neovox_agent_id");
+        localStorage.removeItem("neovox_org_id");
         router.push("/login");
+        return;
       }
+
+      setAgente(data);
       setCargando(false);
     }
 
@@ -39,10 +45,8 @@ export default function TerminalAgente() {
     
     const nuevoEstado = !agente.is_receiving_calls;
     
-    // Actualizamos la interfaz al instante para evitar latencia visual
     setAgente({ ...agente, is_receiving_calls: nuevoEstado });
 
-    // Enviamos la orden de corte al búnker
     await supabase
       .from("agents")
       .update({ is_receiving_calls: nuevoEstado })
@@ -51,29 +55,27 @@ export default function TerminalAgente() {
 
   function cerrarSesion() {
     localStorage.removeItem("neovox_agent_id");
+    localStorage.removeItem("neovox_org_id");
     router.push("/login");
   }
 
   if (cargando) return <div className="min-h-screen bg-black flex items-center justify-center text-white font-mono text-xs">Conectando terminal...</div>;
 
   return (
-    <main className="min-h-screen bg-black flex flex-col items-center justify-between p-6 font-sans select-none relative selection:bg-[#00A8E8] selection:text-white overflow-hidden">
+    <main className="min-h-screen bg-black flex flex-col items-center justify-between p-6 font-sans select-none relative overflow-hidden">
       
-      {/* Resplandor de fondo general */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-150 h-150 bg-[#00A8E8]/10 rounded-full blur-[120px] -z-10 pointer-events-none" />
 
-      {/* Cabecera Cristal */}
       <div className="w-full max-w-md mx-auto flex justify-between items-center bg-[#121212]/80 backdrop-blur-xl border border-white/5 p-5 rounded-2xl shadow-lg relative z-10 mt-4">
         <div>
           <p className="text-[10px] text-[#00A8E8] font-bold uppercase tracking-widest mb-1">Operador en línea</p>
           <h1 className="text-base font-bold text-white">{agente.full_name}</h1>
         </div>
-        <button onClick={cerrarSesion} className="text-[10px] text-red-400 font-bold uppercase tracking-wider bg-red-500/10 px-4 py-2.5 rounded-xl border border-red-500/20 active:bg-red-500/30 hover:bg-red-500/20 transition-colors shadow-sm">
+        <button onClick={cerrarSesion} className="text-[10px] text-red-400 font-bold uppercase tracking-wider bg-red-500/10 px-4 py-2.5 rounded-xl border border-red-500/20 active:bg-red-500/30 transition-colors">
           Desconectar
         </button>
       </div>
 
-      {/* Botón Central */}
       <div className="flex-1 flex flex-col items-center justify-center w-full relative z-10">
         <button
           onClick={alternarEstado}
@@ -83,7 +85,7 @@ export default function TerminalAgente() {
               : "bg-[#121212]/80 border-4 border-white/5 text-gray-500 shadow-inner"
           }`}
         >
-          <span className={`text-5xl font-black tracking-tight mb-3 ${agente.is_receiving_calls ? "text-[#00A8E8] drop-shadow-[0_0_10px_rgba(0,168,232,0.8)]" : "text-gray-600"}`}>
+          <span className={`text-5xl font-black tracking-tight mb-3 ${agente.is_receiving_calls ? "text-[#00A8E8]" : "text-gray-600"}`}>
             {agente.is_receiving_calls ? "ACTIVO" : "PAUSADO"}
           </span>
           <span className={`text-xs font-mono uppercase tracking-widest ${agente.is_receiving_calls ? "text-[#00A8E8]/80" : "text-gray-600"}`}>

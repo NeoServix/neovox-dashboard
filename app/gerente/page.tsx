@@ -37,19 +37,23 @@ export default function ConsolaGerente() {
 
   useEffect(() => {
     const orgId = localStorage.getItem("neovox_org_id");
+    
     if (!orgId) {
       router.push("/login");
       return;
     }
 
     async function cargarBunker() {
-      const { data: orgData } = await supabase
+      const { data: orgData, error: errorOrg } = await supabase
         .from("organizations")
         .select("id, name, plan_tier, schedule")
         .eq("id", orgId)
         .single();
 
-      if (!orgData) {
+      // Cortafuegos: si hay error o la agencia no existe, rompemos las credenciales
+      if (errorOrg || !orgData) {
+        localStorage.removeItem("neovox_org_id");
+        localStorage.removeItem("neovox_agent_id");
         router.push("/login");
         return;
       }
@@ -123,6 +127,7 @@ export default function ConsolaGerente() {
 
   function cerrarSesion() {
     localStorage.removeItem("neovox_org_id");
+    localStorage.removeItem("neovox_agent_id");
     router.push("/login");
   }
 
@@ -154,7 +159,7 @@ export default function ConsolaGerente() {
             <h2 className="text-xs lg:text-sm font-bold text-white uppercase tracking-wider">Registro de Tráfico (Últimos 20)</h2>
             
             <div className="bg-[#121212]/80 backdrop-blur-xl border border-white/5 rounded-3xl overflow-hidden shadow-2xl relative">
-              <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-[#00A8E8]/50 to-transparent" />
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#00A8E8]/50 to-transparent" />
               <div className="divide-y divide-white/5">
                 {llamadas.map(call => (
                   <div key={call.id} className="p-5 lg:p-6 hover:bg-white/5 transition-colors group">
