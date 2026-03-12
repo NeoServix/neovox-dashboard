@@ -69,7 +69,7 @@ export default function ConsolaGerente() {
         .order("id", { ascending: true });
       if (agData) setAgentes(agData);
 
-      // Leemos de LEADS con la columna 'portal_source' corregida
+      // CORRECCIÓN: Sintaxis nativa de relaciones de Supabase
       const { data: leadsData, error: errorLeads } = await supabase
         .from("leads")
         .select(`
@@ -79,7 +79,7 @@ export default function ConsolaGerente() {
           portal_source,
           ai_whisper, 
           parsed_data,
-          agents:assigned_agent_id(full_name)
+          agents(full_name)
         `)
         .eq("org_id", orgId)
         .order("created_at", { ascending: false })
