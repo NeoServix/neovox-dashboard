@@ -69,7 +69,6 @@ export default function ConsolaGerente() {
         .order("id", { ascending: true });
       if (agData) setAgentes(agData);
 
-      // CORRECCIÓN: Sintaxis nativa de relaciones de Supabase
       const { data: leadsData, error: errorLeads } = await supabase
         .from("leads")
         .select(`
@@ -86,7 +85,7 @@ export default function ConsolaGerente() {
         .limit(20);
       
       if (errorLeads) {
-        console.error("Fallo de lectura en base de datos:", errorLeads);
+        console.error("Fallo de lectura en registros:", errorLeads);
       }
       
       if (leadsData) setLeads(leadsData);
@@ -128,7 +127,7 @@ export default function ConsolaGerente() {
     if (error) {
       alert("Fallo al guardar: " + error.message);
     } else {
-      alert("Matriz de enrutamiento actualizada.");
+      alert("Configuración de enrutamiento actualizada.");
     }
   }
 
@@ -138,25 +137,24 @@ export default function ConsolaGerente() {
     router.push("/login");
   }
 
-  // Traductor visual de estados del búnker
   function getEstadoVisual(status: string) {
     switch(status) {
       case 'connected':
         return { texto: 'Conectado', clases: 'bg-green-500/10 text-green-400 border border-green-500/20' };
       case 'manual_review_needed':
-        return { texto: 'Sin Teléfono', clases: 'bg-red-500/10 text-red-400 border border-red-500/20' };
+        return { texto: 'Revisión Manual', clases: 'bg-red-500/10 text-red-400 border border-red-500/20' };
       case 'unanswered':
         return { texto: 'No Respondido', clases: 'bg-orange-500/10 text-orange-400 border border-orange-500/20' };
       case 'pending_notification':
-        return { texto: 'Cierre Nocturno', clases: 'bg-blue-500/10 text-blue-400 border border-blue-500/20' };
+        return { texto: 'Espera Nocturna', clases: 'bg-blue-500/10 text-blue-400 border border-blue-500/20' };
       case 'processing':
-        return { texto: 'Procesando', clases: 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' };
+        return { texto: 'Analizando', clases: 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' };
       default:
         return { texto: status, clases: 'bg-gray-500/10 text-gray-400 border border-gray-500/20' };
     }
   }
 
-  if (cargando) return <div className="min-h-screen bg-black flex items-center justify-center text-white font-mono text-xs">Accediendo a registros...</div>;
+  if (cargando) return <div className="min-h-screen bg-black flex items-center justify-center text-white font-mono text-xs">Conectando con el búnker...</div>;
 
   return (
     <main className="min-h-screen bg-black p-4 lg:p-10 font-sans text-gray-200 relative selection:bg-[#00A8E8] selection:text-white">
@@ -168,26 +166,25 @@ export default function ConsolaGerente() {
           <div>
             <h1 className="text-xl lg:text-3xl font-bold text-white tracking-tight">{org.name}</h1>
             <p className="text-[10px] lg:text-xs text-[#00A8E8] font-mono mt-2 uppercase tracking-widest bg-[#00A8E8]/10 inline-block px-3 py-1 rounded-full border border-[#00A8E8]/20">
-              Plan Activo: {org.plan_tier}
+              Nivel de servicio: {org.plan_tier}
             </p>
           </div>
           <button onClick={cerrarSesion} className="bg-[#121212]/80 border border-white/10 px-4 py-2.5 rounded-xl text-xs font-bold hover:bg-white/10 transition-colors uppercase tracking-wider shadow-sm">
-            Cerrar Sesión
+            Salir
           </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           
-          {/* Columna Izquierda: Auditoría Maestra */}
           <div className="lg:col-span-2 order-2 lg:order-1 space-y-4 lg:space-y-6">
-            <h2 className="text-xs lg:text-sm font-bold text-white uppercase tracking-wider">Registro de Tráfico Central (Últimos 20)</h2>
+            <h2 className="text-xs lg:text-sm font-bold text-white uppercase tracking-wider">Historial de Tráfico</h2>
             
             <div className="bg-[#121212]/80 backdrop-blur-xl border border-white/5 rounded-3xl overflow-hidden shadow-2xl relative">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#00A8E8]/50 to-transparent" />
               <div className="divide-y divide-white/5">
                 {leads.map(lead => {
                   const estado = getEstadoVisual(lead.status);
-                  const nombreLead = lead.parsed_data?.nombre || 'Contacto Web';
+                  const nombreLead = lead.parsed_data?.nombre || 'Lead Entrante';
                   const nombreAgente = lead.agents?.full_name || 'Sistema de Alerta';
 
                   return (
@@ -205,7 +202,7 @@ export default function ConsolaGerente() {
                             <svg className="w-3 h-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                             </svg>
-                            Asignado a <strong className="text-gray-200">{nombreAgente}</strong>
+                            Gestión: <strong className={nombreAgente === 'Sistema de Alerta' ? 'text-[#00A8E8]' : 'text-gray-200'}>{nombreAgente}</strong>
                           </span>
                           <span className={`text-[10px] px-3 py-1.5 rounded-full font-bold uppercase tracking-widest shadow-inner ${estado.clases}`}>
                             {estado.texto}
@@ -216,25 +213,23 @@ export default function ConsolaGerente() {
                       <div className="bg-black/40 border border-white/5 p-4 rounded-xl mt-3 relative overflow-hidden group-hover:border-[#00A8E8]/20 transition-colors">
                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#00A8E8]/30" />
                         <p className="text-[13px] text-gray-400 italic font-medium leading-relaxed pl-2">
-                          " {lead.ai_whisper || 'Extrayendo datos o revisión manual requerida'} "
+                          " {lead.ai_whisper || 'Procesando información del contacto...'} "
                         </p>
                       </div>
                     </div>
                   );
                 })}
                 {leads.length === 0 && (
-                  <div className="p-16 text-center text-gray-500 text-sm">El motor no ha registrado tráfico entrante aún.</div>
+                  <div className="p-16 text-center text-gray-500 text-sm">No hay registros de tráfico en las últimas horas.</div>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Columna Derecha: Controles */}
           <div className="order-1 lg:order-2 space-y-6">
             
-            {/* Control de Agentes */}
             <div>
-              <h2 className="text-xs lg:text-sm font-bold text-white uppercase tracking-wider mb-4">Mando Central de Líneas</h2>
+              <h2 className="text-xs lg:text-sm font-bold text-white uppercase tracking-wider mb-4">Líneas de Agentes</h2>
               <div className="bg-[#121212]/80 backdrop-blur-xl border border-white/5 rounded-3xl p-5 lg:p-6 shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-5 text-[#00A8E8]">
                   <svg width="60" height="60" viewBox="0 0 24 24" fill="currentColor"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
@@ -258,9 +253,8 @@ export default function ConsolaGerente() {
               </div>
             </div>
 
-            {/* Matriz de Horarios */}
             <div>
-              <h2 className="text-xs lg:text-sm font-bold text-white uppercase tracking-wider mb-4">Matriz de Enrutamiento</h2>
+              <h2 className="text-xs lg:text-sm font-bold text-white uppercase tracking-wider mb-4">Horarios de Apertura</h2>
               <div className="bg-[#121212]/80 backdrop-blur-xl border border-white/5 rounded-3xl p-5 lg:p-6 shadow-2xl">
                 <div className="space-y-2 mb-6">
                   {Object.keys(DAYS_ES).map((day) => {
@@ -304,7 +298,7 @@ export default function ConsolaGerente() {
                   disabled={guardandoHorario}
                   className="w-full bg-[#00A8E8] text-white font-bold py-4 rounded-xl text-xs uppercase tracking-widest shadow-[0_0_20px_rgba(0,168,232,0.3)] hover:bg-[#0090C8] transition-all disabled:opacity-50 active:scale-[0.98]"
                 >
-                  {guardandoHorario ? 'Escribiendo en búnker...' : 'Fijar Horarios'}
+                  {guardandoHorario ? 'Actualizando base de datos...' : 'Guardar Horarios'}
                 </button>
               </div>
             </div>
