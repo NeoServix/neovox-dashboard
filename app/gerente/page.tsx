@@ -186,6 +186,7 @@ export default function ConsolaGerente() {
                   const estado = getEstadoVisual(lead.status);
                   const nombreLead = lead.parsed_data?.nombre || 'Lead Entrante';
                   const nombreAgente = lead.agents?.full_name || 'Sistema de Alerta';
+                  const telefonoCliente = lead.parsed_data?.telefono || 'Sin número';
 
                   return (
                     <div key={lead.id} className="p-5 lg:p-6 hover:bg-white/5 transition-colors group">
@@ -195,6 +196,7 @@ export default function ConsolaGerente() {
                             {new Date(lead.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                           </span>
                           <span className="font-bold text-white text-base">{nombreLead}</span>
+                          <span className="text-xs font-mono text-gray-500 bg-white/5 px-2 py-0.5 rounded-full border border-white/10">{telefonoCliente}</span>
                         </div>
                         
                         <div className="flex justify-between items-center mt-1">
