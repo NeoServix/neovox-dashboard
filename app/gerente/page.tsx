@@ -69,14 +69,14 @@ export default function ConsolaGerente() {
         .order("id", { ascending: true });
       if (agData) setAgentes(agData);
 
-      // Ahora leemos de LEADS en lugar de CALLS para tener la imagen completa
-      const { data: leadsData } = await supabase
+      // Leemos de LEADS con la columna 'portal_source' corregida
+      const { data: leadsData, error: errorLeads } = await supabase
         .from("leads")
         .select(`
           id, 
           created_at, 
           status, 
-          source_portal,
+          portal_source,
           ai_whisper, 
           parsed_data,
           agents:assigned_agent_id(full_name)
@@ -84,6 +84,10 @@ export default function ConsolaGerente() {
         .eq("org_id", orgId)
         .order("created_at", { ascending: false })
         .limit(20);
+      
+      if (errorLeads) {
+        console.error("Fallo de lectura en base de datos:", errorLeads);
+      }
       
       if (leadsData) setLeads(leadsData);
       
