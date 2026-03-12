@@ -31,7 +31,7 @@ export default function ConsolaGerente() {
   const router = useRouter();
   const [org, setOrg] = useState<any>(null);
   const [agentes, setAgentes] = useState<any[]>([]);
-  const [llamadas, setLlamadas] = useState<any[]>([]);
+  const [leads, setLeads] = useState<any[]>([]);
   const [cargando, setCargando] = useState(true);
   const [guardandoHorario, setGuardandoHorario] = useState(false);
 
@@ -44,14 +44,12 @@ export default function ConsolaGerente() {
     }
 
     async function cargarBunker() {
-      // Ajuste técnico: seleccionamos 'business_hours' según el SQL de ayer
       const { data: orgData, error: errorOrg } = await supabase
         .from("organizations")
         .select("id, name, plan_tier, business_hours")
         .eq("id", orgId)
         .single();
 
-      // Cortafuegos: si no hay datos o falla, limpiamos caché y echamos
       if (errorOrg || !orgData) {
         localStorage.removeItem("neovox_org_id");
         localStorage.removeItem("neovox_agent_id");
@@ -59,7 +57,6 @@ export default function ConsolaGerente() {
         return;
       }
 
-      // Mapeamos business_hours al estado interno 'schedule' para no romper el UI
       setOrg({
         ...orgData,
         schedule: orgData.business_hours || defaultSchedule
@@ -72,21 +69,23 @@ export default function ConsolaGerente() {
         .order("id", { ascending: true });
       if (agData) setAgentes(agData);
 
-      const { data: callData } = await supabase
-        .from("calls")
+      // Ahora leemos de LEADS en lugar de CALLS para tener la imagen completa
+      const { data: leadsData } = await supabase
+        .from("leads")
         .select(`
           id, 
           created_at, 
           status, 
-          duration, 
-          agents(full_name), 
-          leads(ai_whisper, parsed_data)
+          source_portal,
+          ai_whisper, 
+          parsed_data,
+          agents:assigned_agent_id(full_name)
         `)
         .eq("org_id", orgId)
         .order("created_at", { ascending: false })
         .limit(20);
       
-      if (callData) setLlamadas(callData);
+      if (leadsData) setLeads(leadsData);
       
       setCargando(false);
     }
@@ -116,7 +115,6 @@ export default function ConsolaGerente() {
 
   async function guardarMatrizHorarios() {
     setGuardandoHorario(true);
-    // Ajuste técnico: Guardamos en la columna 'business_hours'
     const { error } = await supabase
       .from('organizations')
       .update({ business_hours: org.schedule })
@@ -136,11 +134,28 @@ export default function ConsolaGerente() {
     router.push("/login");
   }
 
+  // Traductor visual de estados del búnker
+  function getEstadoVisual(status: string) {
+    switch(status) {
+      case 'connected':
+        return { texto: 'Conectado', clases: 'bg-green-500/10 text-green-400 border border-green-500/20' };
+      case 'manual_review_needed':
+        return { texto: 'Sin Teléfono', clases: 'bg-red-500/10 text-red-400 border border-red-500/20' };
+      case 'unanswered':
+        return { texto: 'No Respondido', clases: 'bg-orange-500/10 text-orange-400 border border-orange-500/20' };
+      case 'pending_notification':
+        return { texto: 'Cierre Nocturno', clases: 'bg-blue-500/10 text-blue-400 border border-blue-500/20' };
+      case 'processing':
+        return { texto: 'Procesando', clases: 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' };
+      default:
+        return { texto: status, clases: 'bg-gray-500/10 text-gray-400 border border-gray-500/20' };
+    }
+  }
+
   if (cargando) return <div className="min-h-screen bg-black flex items-center justify-center text-white font-mono text-xs">Accediendo a registros...</div>;
 
   return (
     <main className="min-h-screen bg-black p-4 lg:p-10 font-sans text-gray-200 relative selection:bg-[#00A8E8] selection:text-white">
-      {/* Resplandor de fondo general */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-200 h-150 bg-[#00A8E8]/5 rounded-full blur-[120px] -z-10 pointer-events-none" />
 
       <div className="max-w-6xl mx-auto space-y-6 lg:space-y-8 relative z-10">
@@ -159,42 +174,52 @@ export default function ConsolaGerente() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           
-          {/* Columna Izquierda: Auditoría */}
+          {/* Columna Izquierda: Auditoría Maestra */}
           <div className="lg:col-span-2 order-2 lg:order-1 space-y-4 lg:space-y-6">
-            <h2 className="text-xs lg:text-sm font-bold text-white uppercase tracking-wider">Registro de Tráfico (Últimos 20)</h2>
+            <h2 className="text-xs lg:text-sm font-bold text-white uppercase tracking-wider">Registro de Tráfico Central (Últimos 20)</h2>
             
             <div className="bg-[#121212]/80 backdrop-blur-xl border border-white/5 rounded-3xl overflow-hidden shadow-2xl relative">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#00A8E8]/50 to-transparent" />
               <div className="divide-y divide-white/5">
-                {llamadas.map(call => (
-                  <div key={call.id} className="p-5 lg:p-6 hover:bg-white/5 transition-colors group">
-                    <div className="flex flex-col gap-2 mb-3">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs font-mono text-[#00A8E8] bg-[#00A8E8]/10 px-2 py-0.5 rounded border border-[#00A8E8]/20">{new Date(call.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                        <span className="font-bold text-white text-base">{call.leads?.parsed_data?.nombre || 'Desconocido'}</span>
-                      </div>
-                      
-                      <div className="flex justify-between items-center mt-1">
-                        <span className="text-xs text-gray-400 font-medium flex items-center gap-2">
-                          <svg className="w-3 h-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                          Atendido por <strong className="text-gray-200">{call.agents?.full_name}</strong>
-                        </span>
-                        <span className={`text-[10px] px-3 py-1.5 rounded-full font-bold uppercase tracking-widest shadow-inner ${call.status === 'completed' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                          {call.status} ({call.duration}s)
-                        </span>
-                      </div>
-                    </div>
+                {leads.map(lead => {
+                  const estado = getEstadoVisual(lead.status);
+                  const nombreLead = lead.parsed_data?.nombre || 'Contacto Web';
+                  const nombreAgente = lead.agents?.full_name || 'Búnker Central';
 
-                    <div className="bg-black/40 border border-white/5 p-4 rounded-xl mt-3 relative overflow-hidden group-hover:border-[#00A8E8]/20 transition-colors">
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#00A8E8]/30" />
-                      <p className="text-[13px] text-gray-400 italic font-medium leading-relaxed pl-2">
-                        " {call.leads?.ai_whisper || 'Sin resumen registrado'} "
-                      </p>
+                  return (
+                    <div key={lead.id} className="p-5 lg:p-6 hover:bg-white/5 transition-colors group">
+                      <div className="flex flex-col gap-2 mb-3">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-mono text-[#00A8E8] bg-[#00A8E8]/10 px-2 py-0.5 rounded border border-[#00A8E8]/20">
+                            {new Date(lead.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          </span>
+                          <span className="font-bold text-white text-base">{nombreLead}</span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center mt-1">
+                          <span className="text-xs text-gray-400 font-medium flex items-center gap-2">
+                            <svg className="w-3 h-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                            </svg>
+                            Asignado a <strong className="text-gray-200">{nombreAgente}</strong>
+                          </span>
+                          <span className={`text-[10px] px-3 py-1.5 rounded-full font-bold uppercase tracking-widest shadow-inner ${estado.clases}`}>
+                            {estado.texto}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="bg-black/40 border border-white/5 p-4 rounded-xl mt-3 relative overflow-hidden group-hover:border-[#00A8E8]/20 transition-colors">
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#00A8E8]/30" />
+                        <p className="text-[13px] text-gray-400 italic font-medium leading-relaxed pl-2">
+                          " {lead.ai_whisper || 'Extrayendo datos o revisión manual requerida'} "
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-                {llamadas.length === 0 && (
-                  <div className="p-16 text-center text-gray-500 text-sm">El motor no ha registrado tráfico de llamadas aún.</div>
+                  );
+                })}
+                {leads.length === 0 && (
+                  <div className="p-16 text-center text-gray-500 text-sm">El motor no ha registrado tráfico entrante aún.</div>
                 )}
               </div>
             </div>
