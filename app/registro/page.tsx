@@ -13,8 +13,9 @@ export default function Home() {
   
   const [agencyName, setAgencyName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
+  const [managerPassword, setManagerPassword] = useState("");
   const [legalAccepted, setLegalAccepted] = useState(false);
-  const [agents, setAgents] = useState([{ full_name: "", phone_number: "" }]);
+  const [agents, setAgents] = useState([{ full_name: "", phone_number: "", pin: "" }]);
   
   const [cifFile, setCifFile] = useState<File | null>(null);
   const [dniFile, setDniFile] = useState<File | null>(null);
@@ -85,7 +86,7 @@ export default function Home() {
   };
 
   const addAgentRow = () => {
-    setAgents([...agents, { full_name: "", phone_number: "" }]);
+    setAgents([...agents, { full_name: "", phone_number: "", pin: "" }]);
   };
 
   const updateAgent = (index: number, field: string, value: string) => {
@@ -95,8 +96,8 @@ export default function Home() {
   };
 
   const handleFinalize = async () => {
-    if (!agencyName || !contactEmail || agents.some(a => !a.full_name || !a.phone_number)) {
-      return alert("Faltan datos en el registro del equipo o el correo de alertas.");
+    if (!agencyName || !contactEmail || !managerPassword || agents.some(a => !a.full_name || !a.phone_number || !a.pin)) {
+      return alert("Faltan datos en el registro del equipo, el correo de alertas o los PIN de acceso.");
     }
 
     if (!legalAccepted) {
@@ -109,6 +110,7 @@ export default function Home() {
       return {
         full_name: a.full_name,
         phone_number: "+34" + nueveDigitos,
+        pin: a.pin,
         raw_length: nueveDigitos.length,
         org_id: orgId
       };
@@ -127,6 +129,7 @@ export default function Home() {
         .update({ 
           name: agencyName,
           contact_email: contactEmail,
+          password: managerPassword,
           sector: "Inmobiliaria"
         })
         .eq('id', orgId);
@@ -225,7 +228,7 @@ export default function Home() {
         ) : (
           <div className="max-w-md w-full bg-[#121212]/80 backdrop-blur-xl border border-white/5 rounded-3xl p-8 shadow-2xl relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
             <span className="text-[10px] font-bold text-[#00A8E8] tracking-[0.2em] uppercase relative z-10">Paso 2 de 2</span>
-            <h1 className="text-3xl font-bold text-white mt-2 mb-8 tracking-tight relative z-10">Configura tu Búnker</h1>
+            <h1 className="text-3xl font-bold text-white mt-2 mb-8 tracking-tight relative z-10">Configura tu Nodo</h1>
             
             <div className="space-y-6 relative z-10">
               <div>
@@ -239,32 +242,52 @@ export default function Home() {
                 />
               </div>
 
-              <div>
-                <label className="block text-[10px] uppercase font-bold text-gray-500 mb-2 tracking-wider">Correo de Gerencia</label>
-                <input 
-                  type="email" 
-                  value={contactEmail}
-                  onChange={(e) => setContactEmail(e.target.value)}
-                  placeholder="gerencia@inmobiliaria.com"
-                  className="w-full p-4 rounded-xl border border-[#00A8E8]/20 bg-black/50 text-white focus:border-[#00A8E8] outline-none transition-all text-sm"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-gray-500 mb-2 tracking-wider">Correo de Gerencia</label>
+                  <input 
+                    type="email" 
+                    value={contactEmail}
+                    onChange={(e) => setContactEmail(e.target.value)}
+                    placeholder="gerencia@inmobiliaria.com"
+                    className="w-full p-4 rounded-xl border border-[#00A8E8]/20 bg-black/50 text-white focus:border-[#00A8E8] outline-none transition-all text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-gray-500 mb-2 tracking-wider">Contraseña Gerente</label>
+                  <input 
+                    type="password" 
+                    value={managerPassword}
+                    onChange={(e) => setManagerPassword(e.target.value)}
+                    placeholder="********"
+                    className="w-full p-4 rounded-xl border border-[#00A8E8]/20 bg-black/50 text-[#00A8E8] focus:border-[#00A8E8] outline-none transition-all text-sm"
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase font-bold text-gray-500 mb-4 tracking-wider">Terminales Comerciales (Móvil)</label>
+                <label className="block text-[10px] uppercase font-bold text-gray-500 mb-4 tracking-wider">Equipo y Pines de Acceso (4 dígitos)</label>
                 <div className="space-y-3 max-h-48 overflow-y-auto pr-2 mb-4 scrollbar-thin scrollbar-thumb-white/10">
                   {agents.map((agent, index) => (
-                    <div key={index} className="flex gap-2">
+                    <div key={index} className="flex flex-col gap-2 p-3 bg-white/5 rounded-xl border border-white/5">
                       <input 
                         placeholder="Nombre completo" 
-                        className="w-1/2 p-3 rounded-lg border border-[#00A8E8]/20 bg-black/50 text-white text-sm outline-none focus:border-[#00A8E8]"
+                        className="w-full p-2.5 rounded-lg border border-[#00A8E8]/10 bg-black/50 text-white text-xs outline-none focus:border-[#00A8E8]"
                         onChange={(e) => updateAgent(index, 'full_name', e.target.value)}
                       />
-                      <input 
-                        placeholder="Ej: 612 345 678" 
-                        className="w-1/2 p-3 rounded-lg border border-[#00A8E8]/20 bg-black/50 text-white text-sm outline-none focus:border-[#00A8E8] font-mono"
-                        onChange={(e) => updateAgent(index, 'phone_number', e.target.value)}
-                      />
+                      <div className="flex gap-2">
+                        <input 
+                          placeholder="Móvil 9 dígitos" 
+                          className="w-2/3 p-2.5 rounded-lg border border-[#00A8E8]/10 bg-black/50 text-white text-xs outline-none focus:border-[#00A8E8] font-mono"
+                          onChange={(e) => updateAgent(index, 'phone_number', e.target.value)}
+                        />
+                        <input 
+                          placeholder="PIN" 
+                          maxLength={4}
+                          className="w-1/3 p-2.5 rounded-lg border border-[#00A8E8]/10 bg-black/50 text-[#00A8E8] text-xs outline-none focus:border-[#00A8E8] font-mono text-center"
+                          onChange={(e) => updateAgent(index, 'pin', e.target.value)}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
