@@ -146,9 +146,11 @@ export default function ConsolaGerente() {
       case 'unanswered':
         return { texto: 'No Respondido', clases: 'bg-orange-500/10 text-orange-400 border border-orange-500/20' };
       case 'pending_notification':
-        return { texto: 'Espera Nocturna', clases: 'bg-blue-500/10 text-blue-400 border border-blue-500/20' };
+        return { texto: 'Fuera de Horario', clases: 'bg-blue-500/10 text-blue-400 border border-blue-500/20' };
       case 'processing':
         return { texto: 'Analizando', clases: 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' };
+      case 'notified':
+        return { texto: 'Aviso Enviado', clases: 'bg-purple-500/10 text-purple-400 border border-purple-500/20' };
       default:
         return { texto: status, clases: 'bg-gray-500/10 text-gray-400 border border-gray-500/20' };
     }
@@ -177,7 +179,7 @@ export default function ConsolaGerente() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           
           <div className="lg:col-span-2 order-2 lg:order-1 space-y-4 lg:space-y-6">
-            <h2 className="text-xs lg:text-sm font-bold text-white uppercase tracking-wider">Historial de Tráfico</h2>
+            <h2 className="text-xs lg:text-sm font-bold text-white uppercase tracking-wider mb-4">Historial de Tráfico</h2>
             
             <div className="bg-[#121212]/80 backdrop-blur-xl border border-white/5 rounded-3xl overflow-hidden shadow-2xl relative">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#00A8E8]/50 to-transparent" />
