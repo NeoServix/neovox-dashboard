@@ -34,6 +34,7 @@ export default function ConsolaGerente() {
   const [leads, setLeads] = useState<any[]>([]);
   const [cargando, setCargando] = useState(true);
   const [guardandoHorario, setGuardandoHorario] = useState(false);
+  const [guardandoCrm, setGuardandoCrm] = useState(false);
 
   useEffect(() => {
     const orgId = localStorage.getItem("neovox_org_id");
@@ -46,7 +47,7 @@ export default function ConsolaGerente() {
     async function cargarBunker() {
       const { data: orgData, error: errorOrg } = await supabase
         .from("organizations")
-        .select("id, name, plan_tier, business_hours")
+        .select("id, name, plan_tier, business_hours, crm_forwarding_email")
         .eq("id", orgId)
         .single();
 
@@ -116,6 +117,10 @@ export default function ConsolaGerente() {
     });
   };
 
+  const updateCrmEmail = (email: string) => {
+    setOrg({ ...org, crm_forwarding_email: email });
+  };
+
   async function guardarMatrizHorarios() {
     setGuardandoHorario(true);
     const { error } = await supabase
@@ -128,6 +133,21 @@ export default function ConsolaGerente() {
       alert("Fallo al guardar: " + error.message);
     } else {
       alert("Configuración de enrutamiento actualizada.");
+    }
+  }
+
+  async function guardarEmailCrm() {
+    setGuardandoCrm(true);
+    const { error } = await supabase
+      .from('organizations')
+      .update({ crm_forwarding_email: org.crm_forwarding_email || null })
+      .eq('id', org.id);
+    
+    setGuardandoCrm(false);
+    if (error) {
+      alert("Fallo al conectar ruta: " + error.message);
+    } else {
+      alert("Ruta CRM actualizada correctamente.");
     }
   }
 
@@ -258,6 +278,29 @@ export default function ConsolaGerente() {
             </div>
 
             <div>
+              <h2 className="text-xs lg:text-sm font-bold text-white uppercase tracking-wider mb-4">Integración CRM</h2>
+              <div className="bg-[#121212]/80 backdrop-blur-xl border border-white/5 rounded-3xl p-5 lg:p-6 shadow-2xl">
+                <p className="text-xs text-gray-400 mb-4 leading-relaxed">
+                  Añade el correo de captura de tu software de gestión (ej. Inmovilla, Witei). Si lo dejas en blanco, el sistema guardará los contactos de forma local.
+                </p>
+                <input
+                  type="email"
+                  value={org.crm_forwarding_email || ''}
+                  onChange={(e) => updateCrmEmail(e.target.value)}
+                  placeholder="buzon@tu-crm.com"
+                  className="w-full bg-black/50 border border-[#00A8E8]/20 text-white text-sm p-3 rounded-xl outline-none focus:border-[#00A8E8] transition-colors mb-4 placeholder-gray-600"
+                />
+                <button
+                  onClick={guardarEmailCrm}
+                  disabled={guardandoCrm}
+                  className="w-full bg-white/10 text-white font-bold py-3.5 rounded-xl text-xs uppercase tracking-widest hover:bg-white/20 transition-all disabled:opacity-50 active:scale-[0.98]"
+                >
+                  {guardandoCrm ? 'Conectando...' : 'Guardar Ruta CRM'}
+                </button>
+              </div>
+            </div>
+
+            <div>
               <h2 className="text-xs lg:text-sm font-bold text-white uppercase tracking-wider mb-4">Horarios de Apertura</h2>
               <div className="bg-[#121212]/80 backdrop-blur-xl border border-white/5 rounded-3xl p-5 lg:p-6 shadow-2xl">
                 <div className="space-y-2 mb-6">
@@ -302,7 +345,7 @@ export default function ConsolaGerente() {
                   disabled={guardandoHorario}
                   className="w-full bg-[#00A8E8] text-white font-bold py-4 rounded-xl text-xs uppercase tracking-widest shadow-[0_0_20px_rgba(0,168,232,0.3)] hover:bg-[#0090C8] transition-all disabled:opacity-50 active:scale-[0.98]"
                 >
-                  {guardandoHorario ? 'Actualizando base de datos...' : 'Guardar Horarios'}
+                  {guardandoHorario ? 'Actualizando...' : 'Guardar Horarios'}
                 </button>
               </div>
             </div>
