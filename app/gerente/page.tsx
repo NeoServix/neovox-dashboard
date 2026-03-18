@@ -34,7 +34,6 @@ export default function ConsolaGerente() {
   const [leads, setLeads] = useState<any[]>([]);
   const [cargando, setCargando] = useState(true);
   const [guardandoHorario, setGuardandoHorario] = useState(false);
-  const [guardandoCrm, setGuardandoCrm] = useState(false);
 
   useEffect(() => {
     const orgId = localStorage.getItem("neovox_org_id");
@@ -47,7 +46,7 @@ export default function ConsolaGerente() {
     async function cargarBunker() {
       const { data: orgData, error: errorOrg } = await supabase
         .from("organizations")
-        .select("id, name, plan_tier, business_hours, crm_forwarding_email")
+        .select("id, name, plan_tier, business_hours, inbound_email, assigned_phone")
         .eq("id", orgId)
         .single();
 
@@ -117,10 +116,6 @@ export default function ConsolaGerente() {
     });
   };
 
-  const updateCrmEmail = (email: string) => {
-    setOrg({ ...org, crm_forwarding_email: email });
-  };
-
   async function guardarMatrizHorarios() {
     setGuardandoHorario(true);
     const { error } = await supabase
@@ -133,21 +128,6 @@ export default function ConsolaGerente() {
       alert("Fallo al guardar: " + error.message);
     } else {
       alert("Configuración de enrutamiento actualizada.");
-    }
-  }
-
-  async function guardarEmailCrm() {
-    setGuardandoCrm(true);
-    const { error } = await supabase
-      .from('organizations')
-      .update({ crm_forwarding_email: org.crm_forwarding_email || null })
-      .eq('id', org.id);
-    
-    setGuardandoCrm(false);
-    if (error) {
-      alert("Fallo al conectar ruta: " + error.message);
-    } else {
-      alert("Ruta CRM actualizada correctamente.");
     }
   }
 
@@ -179,7 +159,7 @@ export default function ConsolaGerente() {
   if (cargando) return <div className="min-h-screen bg-black flex items-center justify-center text-white font-mono text-xs">Conectando con el búnker...</div>;
 
   return (
-    <main className="min-h-screen bg-black p-4 lg:p-10 font-sans text-gray-200 relative selection:bg-[#00A8E8] selection:text-white">
+    <main className="min-h-screen bg-black p-4 lg:p-10 font-sans text-gray-200 relative selection:bg-[#00A8E8] selection:text-white overflow-x-hidden">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-200 h-150 bg-[#00A8E8]/5 rounded-full blur-[120px] -z-10 pointer-events-none" />
 
       <div className="max-w-6xl mx-auto space-y-6 lg:space-y-8 relative z-10">
@@ -209,13 +189,14 @@ export default function ConsolaGerente() {
                   const nombreLead = lead.parsed_data?.nombre || 'Lead Entrante';
                   const nombreAgente = lead.agents?.full_name || 'Sistema de Alerta';
                   const telefonoCliente = lead.parsed_data?.telefono || 'Sin número';
+                  const fechaLead = new Date(lead.created_at);
 
                   return (
                     <div key={lead.id} className="p-5 lg:p-6 hover:bg-white/5 transition-colors group">
                       <div className="flex flex-col gap-2 mb-3">
                         <div className="flex items-center gap-3">
                           <span className="text-xs font-mono text-[#00A8E8] bg-[#00A8E8]/10 px-2 py-0.5 rounded border border-[#00A8E8]/20">
-                            {new Date(lead.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            {fechaLead.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' })} - {fechaLead.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
                           </span>
                           <span className="font-bold text-white text-base">{nombreLead}</span>
                           <span className="text-xs font-mono text-gray-500 bg-white/5 px-2 py-0.5 rounded-full border border-white/10">{telefonoCliente}</span>
@@ -278,25 +259,22 @@ export default function ConsolaGerente() {
             </div>
 
             <div>
-              <h2 className="text-xs lg:text-sm font-bold text-white uppercase tracking-wider mb-4">Integración CRM</h2>
+              <h2 className="text-xs lg:text-sm font-bold text-white uppercase tracking-wider mb-4">Identificadores de Red</h2>
               <div className="bg-[#121212]/80 backdrop-blur-xl border border-white/5 rounded-3xl p-5 lg:p-6 shadow-2xl">
-                <p className="text-xs text-gray-400 mb-4 leading-relaxed">
-                  Añade el correo de captura de tu software de gestión (ej. Inmovilla, Witei). Si lo dejas en blanco, el sistema guardará los contactos de forma local.
-                </p>
-                <input
-                  type="email"
-                  value={org.crm_forwarding_email || ''}
-                  onChange={(e) => updateCrmEmail(e.target.value)}
-                  placeholder="buzon@tu-crm.com"
-                  className="w-full bg-black/50 border border-[#00A8E8]/20 text-white text-sm p-3 rounded-xl outline-none focus:border-[#00A8E8] transition-colors mb-4 placeholder-gray-600"
-                />
-                <button
-                  onClick={guardarEmailCrm}
-                  disabled={guardandoCrm}
-                  className="w-full bg-white/10 text-white font-bold py-3.5 rounded-xl text-xs uppercase tracking-widest hover:bg-white/20 transition-all disabled:opacity-50 active:scale-[0.98]"
-                >
-                  {guardandoCrm ? 'Conectando...' : 'Guardar Ruta CRM'}
-                </button>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] md:text-xs font-semibold text-gray-500 uppercase tracking-widest block mb-1">Buzón de Recepción</label>
+                    <div className="w-full bg-black/50 border border-white/10 text-gray-400 text-sm p-3 rounded-xl font-mono cursor-not-allowed">
+                      {org.inbound_email || 'No asignado'}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] md:text-xs font-semibold text-gray-500 uppercase tracking-widest block mb-1">Centralita (Twilio)</label>
+                    <div className="w-full bg-black/50 border border-white/10 text-gray-400 text-sm p-3 rounded-xl font-mono cursor-not-allowed">
+                      {org.assigned_phone || 'No asignado'}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
