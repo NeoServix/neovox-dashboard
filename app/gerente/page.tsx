@@ -31,7 +31,6 @@ const defaultSchedule: ScheduleConfig = {
 const PLAN_BASE_LIMITS: Record<string, number> = {
   'essential': 1,
   'pro': 2,
-  'elite': 5
 };
 
 export default function ConsolaGerente() {
