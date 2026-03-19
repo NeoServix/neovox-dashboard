@@ -27,6 +27,13 @@ const defaultSchedule: ScheduleConfig = {
   sunday: { isOpen: false, open: "00:00", close: "00:00" }
 };
 
+// Mapa de límites de agentes por defecto según el plan contratado
+const PLAN_BASE_LIMITS: Record<string, number> = {
+  'essential': 1,
+  'pro': 2,
+  'elite': 5
+};
+
 export default function ConsolaGerente() {
   const router = useRouter();
   const [org, setOrg] = useState<any>(null);
@@ -34,6 +41,7 @@ export default function ConsolaGerente() {
   const [leads, setLeads] = useState<any[]>([]);
   const [cargando, setCargando] = useState(true);
   const [guardandoHorario, setGuardandoHorario] = useState(false);
+  const [nuevoAgente, setNuevoAgente] = useState({ full_name: '', phone_number: '' });
 
   useEffect(() => {
     const orgId = localStorage.getItem("neovox_org_id");
@@ -46,7 +54,7 @@ export default function ConsolaGerente() {
     async function cargarBunker() {
       const { data: orgData, error: errorOrg } = await supabase
         .from("organizations")
-        .select("id, name, plan_tier, business_hours, inbound_email, assigned_phone")
+        .select("id, name, plan_tier, business_hours, inbound_email, assigned_phone, extra_agents_quota")
         .eq("id", orgId)
         .single();
 
@@ -96,6 +104,12 @@ export default function ConsolaGerente() {
     cargarBunker();
   }, [router]);
 
+  // Cálculos de capacidad en tiempo real
+  const planTierLimpio = org?.plan_tier?.toLowerCase() || 'essential';
+  const limiteBase = PLAN_BASE_LIMITS[planTierLimpio] || 1;
+  const limiteTotal = limiteBase + (org?.extra_agents_quota || 0);
+  const limiteAlcanzado = agentes.length >= limiteTotal;
+
   async function alternarEstadoAgente(id: string, estadoActual: boolean) {
     const nuevoEstado = !estadoActual;
     setAgentes(agentes.map(a => a.id === id ? { ...a, is_receiving_calls: nuevoEstado } : a));
@@ -104,6 +118,35 @@ export default function ConsolaGerente() {
       .from("agents")
       .update({ is_receiving_calls: nuevoEstado })
       .eq("id", id);
+  }
+
+  async function actualizarTelefono(id: string, nuevoTelefono: string) {
+    if (!nuevoTelefono.trim()) return;
+    await supabase.from('agents').update({ phone_number: nuevoTelefono }).eq('id', id);
+    setAgentes(agentes.map(a => a.id === id ? { ...a, phone_number: nuevoTelefono } : a));
+  }
+
+  async function eliminarAgente(id: string) {
+    if (!confirm("¿Eliminar este terminal de forma permanente?")) return;
+    await supabase.from('agents').delete().eq('id', id);
+    setAgentes(agentes.filter(a => a.id !== id));
+  }
+
+  async function crearAgente(e: React.FormEvent) {
+    e.preventDefault();
+    if (limiteAlcanzado || !nuevoAgente.full_name || !nuevoAgente.phone_number) return;
+    
+    const { data } = await supabase.from('agents').insert([{ 
+      org_id: org.id, 
+      full_name: nuevoAgente.full_name, 
+      phone_number: nuevoAgente.phone_number, 
+      is_receiving_calls: true 
+    }]).select();
+
+    if (data) {
+      setAgentes([...agentes, data[0]]);
+      setNuevoAgente({ full_name: '', phone_number: '' });
+    }
   }
 
   const updateDaySchedule = (day: string, field: keyof DaySchedule, value: boolean | string) => {
@@ -242,18 +285,53 @@ export default function ConsolaGerente() {
                 <div className="space-y-3 relative z-10">
                   {agentes.map(agente => (
                     <div key={agente.id} className="flex items-center justify-between p-4 bg-black/40 rounded-2xl border border-white/5">
-                      <div>
-                        <p className="font-bold text-sm text-white mb-0.5">{agente.full_name}</p>
-                        <p className="text-[10px] font-mono text-gray-500">{agente.phone_number}</p>
+                      <div className="w-full sm:w-auto flex-1">
+                        <p className="font-bold text-sm text-white mb-1">{agente.full_name}</p>
+                        <input
+                          type="text"
+                          defaultValue={agente.phone_number}
+                          onBlur={(e) => actualizarTelefono(agente.id, e.target.value)}
+                          className="bg-transparent border-b border-white/10 text-[10px] font-mono text-gray-400 focus:text-white focus:border-[#00A8E8] outline-none w-32 pb-0.5 transition-colors"
+                          title="Haz clic para editar el teléfono"
+                        />
                       </div>
-                      <button 
-                        onClick={() => alternarEstadoAgente(agente.id, agente.is_receiving_calls)} 
-                        className={`w-14 h-7 rounded-full relative transition-colors shadow-inner ${agente.is_receiving_calls ? 'bg-[#00A8E8]' : 'bg-white/10'}`}
-                      >
-                        <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all shadow-md ${agente.is_receiving_calls ? 'left-8' : 'left-1'}`} />
-                      </button>
+                      <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto mt-2 sm:mt-0">
+                        <button 
+                          onClick={() => alternarEstadoAgente(agente.id, agente.is_receiving_calls)} 
+                          className={`w-14 h-7 rounded-full relative transition-colors shadow-inner ${agente.is_receiving_calls ? 'bg-[#00A8E8]' : 'bg-white/10'}`}
+                        >
+                          <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all shadow-md ${agente.is_receiving_calls ? 'left-8' : 'left-1'}`} />
+                        </button>
+                        <button onClick={() => eliminarAgente(agente.id)} className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                      </div>
                     </div>
                   ))}
+                </div>
+
+                <div className="pt-6 border-t border-white/5 mt-5 relative z-10">
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-[10px] font-semibold text-[#00A8E8] uppercase tracking-widest">Añadir Terminal</span>
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${limiteAlcanzado ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-[#00A8E8]/10 text-[#00A8E8] border-[#00A8E8]/20'}`}>
+                      Uso: {agentes.length} / {limiteTotal}
+                    </span>
+                  </div>
+
+                  {limiteAlcanzado ? (
+                    <div className="text-center p-5 bg-black/50 rounded-xl border border-white/5">
+                      <p className="text-xs text-gray-400 mb-4">Has alcanzado el límite de {limiteTotal} terminales simultáneos en tu plan actual.</p>
+                      <a href={`https://buy.stripe.com/aFa3cx6RGecOanm5lzbEA00?client_reference_id=${org.id}`} target="_blank" rel="noreferrer" className="block w-full bg-white text-black font-bold py-3.5 rounded-xl text-xs uppercase tracking-widest hover:bg-gray-200 transition-all active:scale-[0.98]">
+                        + Añadir Terminal Extra (19€/mes)
+                      </a>
+                    </div>
+                  ) : (
+                    <form onSubmit={crearAgente} className="space-y-3">
+                      <input type="text" placeholder="Nombre del comercial" value={nuevoAgente.full_name} onChange={e => setNuevoAgente({...nuevoAgente, full_name: e.target.value})} className="w-full border border-white/10 rounded-xl p-3 text-sm bg-black/50 text-white focus:border-[#00A8E8] outline-none transition-colors" />
+                      <input type="text" placeholder="+34..." value={nuevoAgente.phone_number} onChange={e => setNuevoAgente({...nuevoAgente, phone_number: e.target.value})} className="w-full border border-white/10 rounded-xl p-3 text-sm font-mono bg-black/50 text-white focus:border-[#00A8E8] outline-none transition-colors" />
+                      <button type="submit" className="w-full bg-white/5 border border-white/10 text-white text-xs font-bold py-3.5 rounded-xl hover:bg-white/10 transition-colors uppercase tracking-widest mt-2 active:scale-[0.98]">Dar de alta</button>
+                    </form>
+                  )}
                 </div>
               </div>
             </div>
