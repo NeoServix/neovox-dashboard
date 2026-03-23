@@ -6,7 +6,8 @@ import Image from "next/image";
 import { supabase } from "../lib/supabase"; 
 
 export default function Home() {
-  const [step, setStep] = useState(1);
+  // Iniciamos en 0 para mostrar la pantalla de instrucciones antes de pedir datos
+  const [step, setStep] = useState(0);
   const [orgId, setOrgId] = useState<string | null>(null);
   
   // Paso 1: Datos Base de Gerencia
@@ -157,8 +158,53 @@ export default function Home() {
       <div className="w-full lg:w-1/2 p-6 pt-24 lg:p-16 flex flex-col justify-center items-center relative">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-[#00A8E8]/5 rounded-full blur-[100px] -z-10" />
         
-        {step === 1 && (
+        {step === 0 && (
           <div className="max-w-md w-full bg-[#121212]/80 backdrop-blur-xl border border-white/5 rounded-3xl p-8 shadow-2xl relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <span className="text-[10px] font-bold text-[#00A8E8] tracking-[0.2em] uppercase relative z-10">Fase Previa</span>
+            <h1 className="text-2xl font-bold text-white mt-2 mb-4 tracking-tight relative z-10">Protocolo de Montaje</h1>
+            <p className="text-gray-400 text-xs leading-relaxed mb-8 relative z-10">
+              El proceso de alta no es automático porque requiere conectar infraestructura real. Este es el mapa de ruta exacto de lo que ocurrirá a continuación.
+            </p>
+
+            <div className="space-y-6 relative z-10 mb-8">
+              <div className="flex gap-4 items-start">
+                <div className="w-6 h-6 rounded-full bg-[#00A8E8]/10 text-[#00A8E8] border border-[#00A8E8]/30 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">1</div>
+                <div>
+                  <h3 className="text-sm font-bold text-white mb-2">Apertura del panel y validación legal</h3>
+                  <p className="text-xs text-gray-400 leading-relaxed">
+                    Crearemos tu perfil de acceso. A continuación deberás subir el CIF de la empresa; el DNI del administrador y un recibo de suministro. La ley de telecomunicaciones nos exige esto para validar la sociedad y comprar el número de teléfono local. La aprobación tarda unas 24 horas; pero podemos montar la red técnica mientras esperamos.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-4 items-start">
+                <div className="w-6 h-6 rounded-full bg-[#00A8E8]/10 text-[#00A8E8] border border-[#00A8E8]/30 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">2</div>
+                <div>
+                  <h3 className="text-sm font-bold text-white mb-2">Sesión técnica de conexión</h3>
+                  <p className="text-xs text-gray-400 leading-relaxed">
+                    Al finalizar el registro agendarás una videollamada de 20 minutos con un técnico. Ese día debes tener a mano el acceso al gestor de correo donde recibes los avisos; los móviles de los comerciales; el correo de tu CRM (si decides usar uno) y la tarjeta para abonar la mensualidad en nuestra pasarela.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-black/40 border border-white/5 p-4 rounded-xl mb-8 relative z-10">
+              <p className="text-[11px] text-gray-400 leading-relaxed text-center">
+                Si necesitas aclarar alguna duda sobre la infraestructura antes de abrir el nodo; escribe directamente a <a href="mailto:contacto@neovox.app" className="text-[#00A8E8] hover:text-white transition-colors font-bold">contacto@neovox.app</a>.
+              </p>
+            </div>
+
+            <button
+              onClick={() => setStep(1)}
+              className="w-full bg-[#00A8E8] text-white font-bold py-5 px-8 rounded-xl shadow-[0_0_20px_rgba(0,168,232,0.3)] hover:bg-[#0090C8] transition-all uppercase text-[10px] tracking-widest active:scale-[0.98] relative z-10"
+            >
+              Entendido, iniciar registro
+            </button>
+          </div>
+        )}
+
+        {step === 1 && (
+          <div className="max-w-md w-full bg-[#121212]/80 backdrop-blur-xl border border-white/5 rounded-3xl p-8 shadow-2xl relative overflow-hidden animate-in fade-in slide-in-from-right-4 duration-500">
             <span className="text-[10px] font-bold text-[#00A8E8] tracking-[0.2em] uppercase relative z-10">Paso 1 de 3</span>
             <h1 className="text-2xl font-bold text-white mt-2 mb-4 tracking-tight relative z-10">Perfil de Gerencia</h1>
             <p className="text-gray-400 text-xs leading-relaxed mb-6 relative z-10">
@@ -222,12 +268,20 @@ export default function Home() {
                 </div>
               </div>
 
-              <button 
-                onClick={avanzarAPaso2}
-                className="w-full bg-[#00A8E8] text-white font-bold py-5 px-8 rounded-xl shadow-[0_0_20px_rgba(0,168,232,0.3)] hover:bg-[#0090C8] transition-all uppercase text-[10px] tracking-widest active:scale-[0.98]"
-              >
-                Siguiente Paso
-              </button>
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => setStep(0)}
+                  className="w-1/3 border border-white/10 text-white font-bold py-5 rounded-xl hover:bg-white/5 transition-all uppercase text-[10px] tracking-widest"
+                >
+                  Volver
+                </button>
+                <button 
+                  onClick={avanzarAPaso2}
+                  className="w-2/3 bg-[#00A8E8] text-white font-bold py-5 rounded-xl shadow-[0_0_20px_rgba(0,168,232,0.3)] hover:bg-[#0090C8] transition-all uppercase text-[10px] tracking-widest active:scale-[0.98]"
+                >
+                  Siguiente Paso
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -240,7 +294,7 @@ export default function Home() {
                 Validación Trust Hub
               </h1>
               <p className="text-gray-400 text-xs leading-relaxed">
-                La normativa de telecomunicaciones exige verificar la identidad de la sociedad para asignar un número de teléfono geográfico real. Los archivos se cifran y almacenan en un servidor seguro sin exposición pública.
+                La normativa exige verificar la identidad de la sociedad para asignar un número telefónico real. Los archivos se cifran y almacenan en un servidor seguro sin exposición pública.
               </p>
             </div>
             
@@ -292,7 +346,7 @@ export default function Home() {
             <h1 className="text-2xl font-bold text-white mt-2 mb-4 tracking-tight">Ensamblaje Final</h1>
             
             <p className="text-gray-400 text-xs leading-relaxed mb-8">
-              La base de datos está montada y los archivos legales asegurados. Tu parte está terminada. Reserva ahora tu ventana técnica de 20 minutos; en esa sesión configuraremos la pasarela de pago, daremos de alta tus terminales y conectaremos tu correo original a nuestra red.
+              La base de datos está montada y los archivos legales asegurados. Tu parte está terminada. Reserva ahora tu ventana técnica de 20 minutos; en esa sesión configuraremos la pasarela de pago; daremos de alta tus terminales y conectaremos tu correo original a nuestra red.
             </p>
 
             <a 
