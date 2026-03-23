@@ -179,24 +179,25 @@ export default function Landing() {
               <ul className="space-y-4 mb-8 flex-1">
                 <li className="flex gap-3 items-start text-sm text-gray-300">
                   <svg className="w-5 h-5 text-[#00A8E8] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  <span>1 Terminal (Comercial) incluido.</span>
+                  <span><strong className="text-white">1 Terminal</strong> exclusivo.</span>
                 </li>
                 <li className="flex gap-3 items-start text-sm text-gray-300">
                   <svg className="w-5 h-5 text-[#00A8E8] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  <span>Panel de configuración de horarios para el enrutamiento.</span>
+                  <span>Llamada automática en menos de 60 segundos con resumen de voz IA.</span>
                 </li>
                 <li className="flex gap-3 items-start text-sm text-gray-300">
                   <svg className="w-5 h-5 text-[#00A8E8] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  <span>Interruptor de disponibilidad para activar o desactivar la recepción con un clic.</span>
+                  <span>Panel de Gerencia: Historial de actividad, auditoría visual y logotipos de portales.</span>
                 </li>
                 <li className="flex gap-3 items-start text-sm text-gray-300">
                   <svg className="w-5 h-5 text-[#00A8E8] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  <span>Correos de alerta inmediata para contactos no contestados y avisos fuera de horario comercial.</span>
+                  <span>Interruptor móvil para activar o desactivar la recepción de llamadas con un clic.</span>
+                </li>
+                <li className="flex gap-3 items-start text-sm text-gray-300">
+                  <svg className="w-5 h-5 text-[#00A8E8] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                  <span>Integración directa con tu CRM y envío de alertas automáticas por leads no contestados o recibidos fuera de horario.</span>
                 </li>
               </ul>
-              <div className="pt-6 border-t border-white/10 mt-auto text-xs text-gray-500 font-mono text-center">
-                Terminal Extra: +19€ / unidad
-              </div>
             </div>
 
             {/* Pro */}
@@ -215,19 +216,23 @@ export default function Landing() {
                 </li>
                 <li className="flex gap-3 items-start text-sm text-gray-300">
                   <svg className="w-5 h-5 text-[#00A8E8] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  <span>Reparto inteligente de contactos por zonas mediante prefijos.</span>
+                  <span>Todo el motor tecnológico, integraciones y panel completo del Plan Essential.</span>
                 </li>
                 <li className="flex gap-3 items-start text-sm text-gray-300">
                   <svg className="w-5 h-5 text-[#00A8E8] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  <span>Protocolo de seguridad para derivar llamadas si el responsable de zona no atiende.</span>
+                  <span>Reparto inteligente de contactos por zonas mediante la asignación de prefijos.</span>
                 </li>
                 <li className="flex gap-3 items-start text-sm text-gray-300">
                   <svg className="w-5 h-5 text-[#00A8E8] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  <span>Historial de actividad con auditoría visual y logotipos de portales integrados. Aislamiento técnico completo mediante subcuentas.</span>
+                  <span>Protocolo de seguridad: Derivación a la bolsa general de la agencia si el responsable de la zona no atiende.</span>
+                </li>
+                <li className="flex gap-3 items-start text-sm text-gray-300">
+                  <svg className="w-5 h-5 text-[#00A8E8] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                  <span>Aislamiento técnico completo mediante subcuentas dedicadas de telefonía.</span>
                 </li>
               </ul>
-              <div className="pt-6 border-t border-[#00A8E8]/20 mt-auto text-xs text-gray-500 font-mono text-center">
-                Terminal Extra: +19€ / unidad
+              <div className="pt-6 border-t border-[#00A8E8]/20 mt-auto text-xs text-gray-300 font-mono text-center bg-black/40 py-3 rounded-xl border border-white/5">
+                Añade terminales extra por <strong className="text-white">+19€ / unidad</strong>
               </div>
             </div>
 
@@ -245,9 +250,9 @@ export default function Landing() {
               href="/registro"
               className="inline-block bg-white text-black font-bold py-4 px-8 md:py-4 md:px-12 rounded-xl hover:bg-gray-200 transition-all uppercase text-[10px] md:text-xs tracking-widest shadow-xl active:scale-[0.98] mb-4"
             >
-              Registrarme ahora
+              Iniciar proceso de conexión
             </Link>
-            <p className="text-[10px] text-gray-500 font-mono uppercase tracking-widest">
+            <p className="text-[10px] text-gray-500 font-mono uppercase tracking-widest block">
               Instalación asistida mediante videollamada tras el registro.
             </p>
           </div>
