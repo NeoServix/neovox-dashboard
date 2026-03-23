@@ -133,9 +133,17 @@ export default function PuertaAcceso() {
               className="w-full bg-black/50 border border-[#00A8E8]/20 rounded-xl p-4 text-white text-sm outline-none focus:border-[#00A8E8] transition-all placeholder:text-gray-600 tracking-widest"
               autoComplete="off"
             />
+            <div className="flex justify-end mt-2">
+              <a 
+                href="mailto:contacto@neovox.app?subject=Reinicio%20de%20credenciales%20NeoVox"
+                className="text-[10px] text-gray-500 hover:text-[#00A8E8] transition-colors tracking-wider"
+              >
+                ¿Problemas de acceso? Solicita una clave temporal
+              </a>
+            </div>
           </div>
 
-          <p className="text-[10px] text-gray-500 text-center font-medium pt-2 pb-4">
+          <p className="text-[10px] text-gray-500 text-center font-medium pt-2 pb-2">
             El protocolo procesa automáticamente los móviles de 9 dígitos.
           </p>
 
@@ -148,7 +156,7 @@ export default function PuertaAcceso() {
           <button
             type="submit"
             disabled={cargando}
-            className="w-full bg-[#00A8E8] text-white font-bold py-4 rounded-xl text-xs uppercase tracking-widest shadow-[0_0_20px_rgba(0,168,232,0.3)] hover:bg-[#0090C8] transition-all disabled:opacity-50 active:scale-[0.98]"
+            className="w-full bg-[#00A8E8] text-white font-bold py-4 rounded-xl text-xs uppercase tracking-widest shadow-[0_0_20px_rgba(0,168,232,0.3)] hover:bg-[#0090C8] transition-all disabled:opacity-50 active:scale-[0.98] mt-2"
           >
             {cargando ? "Desencriptando..." : "Acceder al sistema"}
           </button>
