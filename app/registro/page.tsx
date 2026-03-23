@@ -9,11 +9,10 @@ export default function Home() {
   const [step, setStep] = useState(1);
   const [orgId, setOrgId] = useState<string | null>(null);
   
-  // Paso 1: Datos Base y Terminales
+  // Paso 1: Datos Base de Gerencia
   const [agencyName, setAgencyName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [managerPassword, setManagerPassword] = useState("");
-  const [agents, setAgents] = useState([{ full_name: "", phone_number: "", pin: "" }]);
   
   // Paso 2: KYC y Legal
   const [cifFile, setCifFile] = useState<File | null>(null);
@@ -33,19 +32,9 @@ export default function Home() {
     }
   };
 
-  const addAgentRow = () => {
-    setAgents([...agents, { full_name: "", phone_number: "", pin: "" }]);
-  };
-
-  const updateAgent = (index: number, field: string, value: string) => {
-    const newAgents = [...agents];
-    (newAgents[index] as any)[field] = value;
-    setAgents(newAgents);
-  };
-
   const avanzarAPaso2 = () => {
-    if (!agencyName || !contactEmail || !managerPassword || agents.some(a => !a.full_name || !a.phone_number || !a.pin)) {
-      return alert("Faltan datos en el registro del equipo, el correo o los pines de acceso.");
+    if (!agencyName || !contactEmail || !managerPassword) {
+      return alert("Faltan datos para crear el perfil de gerencia.");
     }
     setStep(2);
   };
@@ -63,26 +52,11 @@ export default function Home() {
       return alert("Uno de los archivos pesa más de 5MB. Por favor, comprime los documentos.");
     }
 
-    const processedAgents = agents.map(a => {
-      const soloNumeros = a.phone_number.replace(/\D/g, '');
-      const nueveDigitos = soloNumeros.slice(-9);
-      return {
-        full_name: a.full_name,
-        phone_number: "+34" + nueveDigitos,
-        pin: a.pin,
-        raw_length: nueveDigitos.length
-      };
-    });
-
-    if (processedAgents.some(a => a.raw_length < 9)) {
-      return alert("Uno de los números de teléfono introducidos no es válido. Revisa que tengan 9 dígitos.");
-    }
-
     setIsProcessing(true);
     let tempOrgId = null;
 
     try {
-      // 1. Crear Organización en Supabase
+      // 1. Crear Organización en Supabase (Solo perfil matriz)
       const { data: org, error: orgError } = await supabase
         .from('organizations')
         .insert([{ 
@@ -115,16 +89,7 @@ export default function Home() {
         if (uploadError) throw new Error(`Fallo al subir el documento ${item.prefix}: ${uploadError.message}`);
       }
 
-      // 3. Vincular Terminales
-      const finalAgents = processedAgents.map(({ raw_length, ...rest }) => ({
-        ...rest,
-        org_id: org.id
-      }));
-
-      const { error: agentsError } = await supabase.from('agents').insert(finalAgents);
-      if (agentsError) throw agentsError;
-
-      // 4. Correo de Bienvenida Transaccional
+      // 3. Correo de Bienvenida Transaccional
       const respuestaCorreo = await fetch('/api/onboarding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -190,9 +155,9 @@ export default function Home() {
         {step === 1 && (
           <div className="max-w-md w-full bg-[#121212]/80 backdrop-blur-xl border border-white/5 rounded-3xl p-8 shadow-2xl relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
             <span className="text-[10px] font-bold text-[#00A8E8] tracking-[0.2em] uppercase relative z-10">Paso 1 de 3</span>
-            <h1 className="text-2xl font-bold text-white mt-2 mb-4 tracking-tight relative z-10">Parámetros del Nodo</h1>
+            <h1 className="text-2xl font-bold text-white mt-2 mb-4 tracking-tight relative z-10">Perfil de Gerencia</h1>
             <p className="text-gray-400 text-xs leading-relaxed mb-6 relative z-10">
-              Estos datos generan tu espacio aislado en la base de datos. Establecen las credenciales de acceso para tu panel de gerencia y definen qué teléfonos móviles recibirán las llamadas del sistema.
+              Estos datos generan tu espacio aislado en la base de datos y establecen las credenciales maestras. El alta y enrutamiento de los comerciales lo configuraremos en directo durante la sesión técnica.
             </p>
             
             <div className="space-y-6 relative z-10">
@@ -209,7 +174,7 @@ export default function Home() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-gray-500 mb-2 tracking-wider">Correo de Gerencia</label>
+                  <label className="block text-[10px] uppercase font-bold text-gray-500 mb-2 tracking-wider">Correo Administrador</label>
                   <input 
                     type="email" 
                     value={contactEmail}
@@ -219,7 +184,7 @@ export default function Home() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase font-bold text-gray-500 mb-2 tracking-wider">Contraseña Gerente</label>
+                  <label className="block text-[10px] uppercase font-bold text-gray-500 mb-2 tracking-wider">Contraseña</label>
                   <input 
                     type="password" 
                     value={managerPassword}
@@ -228,43 +193,6 @@ export default function Home() {
                     className="w-full p-4 rounded-xl border border-[#00A8E8]/20 bg-black/50 text-[#00A8E8] focus:border-[#00A8E8] outline-none transition-all text-sm"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-[10px] uppercase font-bold text-gray-500 mb-4 tracking-wider">Terminales de Recepción (Comerciales)</label>
-                <div className="space-y-3 max-h-48 overflow-y-auto pr-2 mb-4 scrollbar-thin scrollbar-thumb-white/10">
-                  {agents.map((agent, index) => (
-                    <div key={index} className="flex flex-col gap-2 p-3 bg-white/5 rounded-xl border border-white/5">
-                      <input 
-                        placeholder="Nombre completo" 
-                        value={agent.full_name}
-                        className="w-full p-2.5 rounded-lg border border-[#00A8E8]/10 bg-black/50 text-white text-xs outline-none focus:border-[#00A8E8]"
-                        onChange={(e) => updateAgent(index, 'full_name', e.target.value)}
-                      />
-                      <div className="flex gap-2">
-                        <input 
-                          placeholder="Móvil 9 dígitos" 
-                          value={agent.phone_number}
-                          className="w-2/3 p-2.5 rounded-lg border border-[#00A8E8]/10 bg-black/50 text-white text-xs outline-none focus:border-[#00A8E8] font-mono"
-                          onChange={(e) => updateAgent(index, 'phone_number', e.target.value)}
-                        />
-                        <input 
-                          placeholder="PIN (4 dígitos)" 
-                          maxLength={4}
-                          value={agent.pin}
-                          className="w-1/3 p-2.5 rounded-lg border border-[#00A8E8]/10 bg-black/50 text-[#00A8E8] text-xs outline-none focus:border-[#00A8E8] font-mono text-center"
-                          onChange={(e) => updateAgent(index, 'pin', e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <button 
-                  onClick={addAgentRow}
-                  className="text-[10px] font-bold text-[#00A8E8] hover:text-white uppercase tracking-wider transition-colors"
-                >
-                  + Añadir otro terminal
-                </button>
               </div>
 
               <button 
@@ -321,7 +249,7 @@ export default function Home() {
                 disabled={isProcessing}
                 className="w-2/3 bg-[#00A8E8] text-white font-bold py-5 rounded-xl shadow-[0_0_20px_rgba(0,168,232,0.3)] hover:bg-[#0090C8] transition-all uppercase text-[10px] tracking-widest disabled:opacity-50 active:scale-[0.98]"
               >
-                {isProcessing ? "Escribiendo en base de datos..." : "Cifrar y Finalizar"}
+                {isProcessing ? "Cifrando..." : "Validar y Finalizar"}
               </button>
             </div>
           </div>
@@ -337,7 +265,7 @@ export default function Home() {
             <h1 className="text-2xl font-bold text-white mt-2 mb-4 tracking-tight">Ensamblaje Final</h1>
             
             <p className="text-gray-400 text-xs leading-relaxed mb-8">
-              La base de datos está montada y los archivos legales asegurados. Tu parte está terminada. Reserva ahora tu ventana técnica de 20 minutos; en esa sesión configuraremos la pasarela de pago, conectaremos tu correo original a nuestra red y haremos la primera prueba de estrés en directo.
+              La base de datos está montada y los archivos legales asegurados. Tu parte está terminada. Reserva ahora tu ventana técnica de 20 minutos; en esa sesión configuraremos la pasarela de pago, daremos de alta tus terminales y conectaremos tu correo original a nuestra red.
             </p>
 
             <a 
